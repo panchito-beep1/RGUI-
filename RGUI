@@ -1243,6 +1243,7 @@ function RGui:CreateKeySystem(config)
     local theme = self._theme
     local services = config.Services or {}
     local description = config.Description or "Enter your key to continue."
+    local title = config.Title or "Key System"
     local onSuccess = config.Callback or function() end
 
     local serviceNames = {}
@@ -1257,14 +1258,17 @@ function RGui:CreateKeySystem(config)
     keyScreen.ResetOnSpawn = false
     keyScreen.Parent = PlayerGui
 
+    -- Main frame (wider to fit two columns)
     local mainFrame = Instance.new("Frame")
     mainFrame.BackgroundColor3 = theme.WindowBg
-    mainFrame.Position = UDim2.new(0.5, -150, 0.4, 0)
-    mainFrame.Size = UDim2.new(0, 300, 0, 170)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.4, 0)
+    mainFrame.Size = UDim2.new(0, 400, 0, 180)
+    mainFrame.ClipsDescendants = false   -- allow service list to appear outside
     mainFrame.Parent = keyScreen
     applyCorner(mainFrame, 4)
     applyBorder(mainFrame, theme.Border)
 
+    -- Titlebar with close button
     local titleBar = Instance.new("Frame")
     titleBar.BackgroundColor3 = theme.TitleBg
     titleBar.Size = UDim2.new(1, 0, 0, 24)
@@ -1272,53 +1276,90 @@ function RGui:CreateKeySystem(config)
     applyCorner(titleBar, 4)
     local titleLbl = Instance.new("TextLabel")
     titleLbl.BackgroundTransparency = 1
-    titleLbl.Size = UDim2.new(1, 0, 1, 0)
+    titleLbl.Size = UDim2.new(1, -24, 1, 0)
     titleLbl.Font = Enum.Font.RobotoMono
-    titleLbl.Text = "Key System"
+    titleLbl.Text = " " .. title
     titleLbl.TextColor3 = theme.Text
     titleLbl.TextSize = 13
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
     titleLbl.Parent = titleBar
+
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.BackgroundTransparency = 1
+    closeBtn.Position = UDim2.new(1, -20, 0, 0)
+    closeBtn.Size = UDim2.new(0, 20, 1, 0)
+    closeBtn.Font = Enum.Font.RobotoMono
+    closeBtn.Text = "×"
+    closeBtn.TextColor3 = theme.SubText
+    closeBtn.TextSize = 14
+    closeBtn.Parent = titleBar
+    closeBtn.MouseButton1Click:Connect(function() keyScreen:Destroy() end)
+
     makeDraggable(mainFrame, titleBar)
 
-    -- Description label
-    local descLabel = Instance.new("TextLabel")
-    descLabel.BackgroundTransparency = 1
-    descLabel.Position = UDim2.new(0, 8, 0, 30)
-    descLabel.Size = UDim2.new(1, -16, 0, 20)
-    descLabel.Font = Enum.Font.RobotoMono
-    descLabel.Text = description
-    descLabel.TextColor3 = theme.SubText
-    descLabel.TextSize = 12
-    descLabel.TextWrapped = true
-    descLabel.Parent = mainFrame
+    -- ── Left column (title, input, service, submit) ──
+    local leftPanel = Instance.new("Frame")
+    leftPanel.BackgroundTransparency = 1
+    leftPanel.Position = UDim2.new(0, 8, 0, 30)
+    leftPanel.Size = UDim2.new(0, 180, 1, -38)    -- height less titlebar + margins
+    leftPanel.ClipsDescendants = false
+    leftPanel.Parent = mainFrame
 
-    -- Service dropdown
-    local drop = Instance.new("TextButton")
-    drop.BackgroundColor3 = theme.FrameBg
-    drop.Position = UDim2.new(0, 8, 0, 56)
-    drop.Size = UDim2.new(1, -16, 0, 24)
-    drop.Font = Enum.Font.RobotoMono
-    drop.Text = " " .. serviceNames[1]
-    drop.TextColor3 = theme.Text
-    drop.TextSize = 13
-    drop.TextXAlignment = Enum.TextXAlignment.Left
-    drop.Parent = mainFrame
-    applyCorner(drop, 2)
-    applyBorder(drop, theme.Border)
+    -- Script title label
+    local scriptTitle = Instance.new("TextLabel")
+    scriptTitle.BackgroundTransparency = 1
+    scriptTitle.Size = UDim2.new(1, 0, 0, 18)
+    scriptTitle.Font = Enum.Font.RobotoMono
+    scriptTitle.Text = config.ScriptTitle or "My Script"
+    scriptTitle.TextColor3 = theme.Accent
+    scriptTitle.TextSize = 13
+    scriptTitle.TextXAlignment = Enum.TextXAlignment.Left
+    scriptTitle.Parent = leftPanel
 
-    local dropList = Instance.new("Frame")
-    dropList.BackgroundColor3 = theme.TabNormal
-    dropList.Position = UDim2.new(0, 8, 0, 82)
-    dropList.Size = UDim2.new(1, -16, 0, 0)
-    dropList.ClipsDescendants = true
-    dropList.Parent = mainFrame
-    applyBorder(dropList, theme.Border)
+    -- Key input
+    local keyInput = Instance.new("TextBox")
+    keyInput.BackgroundColor3 = theme.FrameBg
+    keyInput.Position = UDim2.new(0, 0, 0, 26)
+    keyInput.Size = UDim2.new(1, 0, 0, 24)
+    keyInput.Font = Enum.Font.RobotoMono
+    keyInput.PlaceholderText = "Enter key..."
+    keyInput.PlaceholderColor3 = theme.SubText
+    keyInput.Text = ""
+    keyInput.TextColor3 = theme.Text
+    keyInput.TextSize = 13
+    keyInput.Parent = leftPanel
+    applyCorner(keyInput, 2)
+    applyBorder(keyInput, theme.Border)
 
-    local dropLayout = Instance.new("UIListLayout")
-    dropLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    dropLayout.Parent = dropList
+    -- Service dropdown button
+    local serviceBtn = Instance.new("TextButton")
+    serviceBtn.BackgroundColor3 = theme.FrameBg
+    serviceBtn.Position = UDim2.new(0, 0, 0, 60)
+    serviceBtn.Size = UDim2.new(1, 0, 0, 24)
+    serviceBtn.Font = Enum.Font.RobotoMono
+    serviceBtn.Text = "  " .. serviceNames[1]
+    serviceBtn.TextColor3 = theme.Text
+    serviceBtn.TextSize = 13
+    serviceBtn.TextXAlignment = Enum.TextXAlignment.Left
+    serviceBtn.Parent = leftPanel
+    applyCorner(serviceBtn, 2)
+    applyBorder(serviceBtn, theme.Border)
 
-    local isDropOpen = false
+    -- Service list (placed directly in mainFrame so it can overlay)
+    local serviceList = Instance.new("Frame")
+    serviceList.BackgroundColor3 = theme.TabNormal
+    serviceList.Size = UDim2.new(0, 180, 0, 0)
+    serviceList.Visible = false
+    serviceList.ZIndex = 10
+    serviceList.Parent = mainFrame
+    applyBorder(serviceList, theme.Border)
+
+    local serviceLayout = Instance.new("UIListLayout")
+    serviceLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    serviceLayout.Parent = serviceList
+
+    local selectedService = serviceNames[1]
+    local serviceButtons = {}
     for i, srv in ipairs(serviceNames) do
         local btn = Instance.new("TextButton")
         btn.BackgroundTransparency = 1
@@ -1329,61 +1370,59 @@ function RGui:CreateKeySystem(config)
         btn.TextSize = 12
         btn.TextXAlignment = Enum.TextXAlignment.Left
         btn.LayoutOrder = i
-        btn.Parent = dropList
+        btn.ZIndex = 10
+        btn.Parent = serviceList
 
         btn.MouseEnter:Connect(function() btn.TextColor3 = theme.Accent end)
         btn.MouseLeave:Connect(function() btn.TextColor3 = theme.TabNormalText end)
         btn.MouseButton1Click:Connect(function()
-            drop.Text = " " .. srv
-            isDropOpen = false
-            TweenService:Create(dropList, TWEEN_FAST, {Size = UDim2.new(1, -16, 0, 0)}):Play()
+            selectedService = srv
+            serviceBtn.Text = "  " .. srv
+            serviceList.Visible = false
+            TweenService:Create(serviceList, TWEEN_FAST, {Size = UDim2.new(0, 180, 0, 0)}):Play()
         end)
+        serviceButtons[srv] = btn
     end
 
-    drop.MouseButton1Click:Connect(function()
-        isDropOpen = not isDropOpen
-        local listHeight = isDropOpen and (#serviceNames * 22) or 0
-        TweenService:Create(dropList, TWEEN_FAST, {Size = UDim2.new(1, -16, 0, listHeight)}):Play()
+    local isServiceOpen = false
+    serviceBtn.MouseButton1Click:Connect(function()
+        isServiceOpen = not isServiceOpen
+        if isServiceOpen then
+            -- Position list right below the service button
+            local absPos = serviceBtn.AbsolutePosition
+            local absSize = serviceBtn.AbsoluteSize
+            serviceList.Position = UDim2.new(0, absPos.X - mainFrame.AbsolutePosition.X,
+                                             0, absPos.Y + absSize.Y - mainFrame.AbsolutePosition.Y)
+            serviceList.Visible = true
+            local listHeight = #serviceNames * 22
+            TweenService:Create(serviceList, TWEEN_FAST, {Size = UDim2.new(0, 180, 0, listHeight)}):Play()
+        else
+            TweenService:Create(serviceList, TWEEN_FAST, {Size = UDim2.new(0, 180, 0, 0)}):Play()
+            task.delay(0.1, function() serviceList.Visible = false end)
+        end
     end)
 
-    -- Key input
-    local keyInput = Instance.new("TextBox")
-    keyInput.BackgroundColor3 = theme.FrameBg
-    keyInput.Position = UDim2.new(0, 8, 0, 110)
-    keyInput.Size = UDim2.new(1, -16, 0, 24)
-    keyInput.Font = Enum.Font.RobotoMono
-    keyInput.PlaceholderText = "Key..."
-    keyInput.PlaceholderColor3 = theme.SubText
-    keyInput.Text = ""
-    keyInput.TextColor3 = theme.Text
-    keyInput.TextSize = 13
-    keyInput.Parent = mainFrame
-    applyCorner(keyInput, 2)
-    applyBorder(keyInput, theme.Border)
-
-    -- Submit button
+    -- Submit button (at bottom of left column)
     local submitBtn = Instance.new("TextButton")
     submitBtn.BackgroundColor3 = theme.FrameBg
-    submitBtn.Position = UDim2.new(0, 8, 0, 140)
-    submitBtn.Size = UDim2.new(1, -16, 0, 24)
+    submitBtn.Position = UDim2.new(0, 0, 1, -28)
+    submitBtn.Size = UDim2.new(1, 0, 0, 24)
     submitBtn.Font = Enum.Font.RobotoMono
     submitBtn.Text = "Check Key"
     submitBtn.TextColor3 = theme.Text
     submitBtn.TextSize = 13
-    submitBtn.Parent = mainFrame
+    submitBtn.Parent = leftPanel
     applyCorner(submitBtn, 2)
     applyBorder(submitBtn, theme.Border)
 
     submitBtn.MouseButton1Click:Connect(function()
-        local selectedServiceName = drop.Text:gsub("^%s+", "")
-        local service = services[selectedServiceName]
+        local service = services[selectedService]
         if service and service.Validate then
             local key = keyInput.Text
             if service.Validate(key) then
-                onSuccess(selectedServiceName, key)
+                onSuccess(selectedService, key)
                 keyScreen:Destroy()
             else
-                -- Flash red for invalid key
                 local origColor = keyInput.BackgroundColor3
                 keyInput.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
                 task.delay(0.3, function()
@@ -1393,7 +1432,27 @@ function RGui:CreateKeySystem(config)
         end
     end)
 
-    -- Return a simple object that can destroy the key UI
+    -- ── Right column (description) ──
+    local rightPanel = Instance.new("Frame")
+    rightPanel.BackgroundColor3 = theme.FrameBg
+    rightPanel.Position = UDim2.new(0, 196, 0, 30)
+    rightPanel.Size = UDim2.new(0, 196, 1, -38)
+    rightPanel.Parent = mainFrame
+    applyCorner(rightPanel, 2)
+    applyBorder(rightPanel, theme.Border)
+
+    local descLabel = Instance.new("TextLabel")
+    descLabel.BackgroundTransparency = 1
+    descLabel.Position = UDim2.new(0, 6, 0, 6)
+    descLabel.Size = UDim2.new(1, -12, 1, -12)
+    descLabel.Font = Enum.Font.RobotoMono
+    descLabel.Text = description
+    descLabel.TextColor3 = theme.SubText
+    descLabel.TextSize = 12
+    descLabel.TextWrapped = true
+    descLabel.Parent = rightPanel
+
+    -- Return a destructible object
     local keySys = {}
     function keySys:Destroy()
         keyScreen:Destroy()
