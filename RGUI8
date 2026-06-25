@@ -1,0 +1,1715 @@
+--[[
+  ▄▄▄▄▄▄▄    ▄▄▄▄▄▄▄  ▄▄▄  ▄▄▄ ▄▄▄▄▄ 
+  ███▀▀███▄ ███▀▀▀▀▀  ███  ███  ███  
+  ███▄▄███▀ ███       ███  ███  ███  
+  ███▀▀██▄  ███  ███▀ ███▄▄███  ███  
+  ███  ▀███ ▀██████▀  ▀██████▀ ▄███▄  
+]]
+print("▄▄▄▄▄▄▄    ▄▄▄▄▄▄▄  ▄▄▄  ▄▄▄ ▄▄▄▄▄ ")
+print("███▀▀███▄ ███▀▀▀▀▀  ███  ███  ███  ")
+print("███▄▄███▀ ███       ███  ███  ███  ")
+print("███▀▀██▄  ███  ███▀ ███▄▄███  ███  ")
+print("███  ▀███ ▀██████▀  ▀██████▀ ▄███▄  ")
+
+--[[
+    R-GUI Library v3.3 – Advanced Edition
+    Includes: Button, Checkbox, Slider, Dropdown, SearchableDropdown,
+              MultiSelectDropdown, MultiSelectSearchableDropdown,
+              ColorPicker, Label, Section, Separator,
+              TextBox Input, Watermark, Key System
+]]
+
+
+local RGui = {}
+RGui.__index = RGui
+
+local TabComponent = {}
+TabComponent.__index = TabComponent
+
+-- ── Services ──────────────────────────────────────────────────────────────────
+local Players           = game:GetService("Players")
+local UserInputService  = game:GetService("UserInputService")
+local TweenService      = game:GetService("TweenService")
+local TextService       = game:GetService("TextService")
+local CoreGui           = game:GetService("CoreGui")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- ── Default Theme (classic v1.1 blue) ─────────────────────────────────────────
+RGui.DefaultTheme = {
+    WindowBg      = Color3.fromRGB(21, 22, 23),
+    TitleBg       = Color3.fromRGB(41, 74, 122),
+    Border        = Color3.fromRGB(21, 22, 23),
+    Text          = Color3.fromRGB(255, 255, 255),
+    SubText       = Color3.fromRGB(180, 180, 180),
+    Accent        = Color3.fromRGB(56, 101, 165),
+    AccentHover   = Color3.fromRGB(56, 101, 165),
+    FrameBg       = Color3.fromRGB(41, 74, 122),
+    FrameBgHover  = Color3.fromRGB(56, 101, 165),
+    CheckOff      = Color3.fromRGB(21, 22, 23),
+    CheckOn       = Color3.fromRGB(56, 101, 165),
+    SliderTrack   = Color3.fromRGB(21, 22, 23),
+    SliderFill    = Color3.fromRGB(56, 101, 165),
+    TabBarBg      = Color3.fromRGB(21, 22, 23),
+    TabNormal     = Color3.fromRGB(31, 32, 33),
+    TabNormalText = Color3.fromRGB(180, 180, 180),
+    TabActive     = Color3.fromRGB(56, 101, 165),
+    TabActiveText = Color3.fromRGB(255, 255, 255),
+    TabOff        = Color3.fromRGB(31, 32, 33),
+    TabOn         = Color3.fromRGB(56, 101, 165),
+    GraphBg       = Color3.fromRGB(21, 22, 23),   -- graph background
+    GraphLine     = Color3.fromRGB(56, 101, 165),  -- line colour (accent by default)
+}
+
+local TWEEN_FAST = TweenInfo.new(0.1, Enum.EasingStyle.Quad)
+
+-- ── Internal Helpers ──────────────────────────────────────────────────────────
+local function applyCorner(parent, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius or 2)
+    c.Parent = parent
+    return c
+end
+
+local function applyBorder(parent, color)
+    local s = Instance.new("UIStroke")
+    s.Color = color
+    s.Thickness = 1
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = parent
+    return s
+end
+
+local function applyPadding(parent, px)
+    local p = Instance.new("UIPadding")
+    p.PaddingLeft   = UDim.new(0, px)
+    p.PaddingRight  = UDim.new(0, px)
+    p.PaddingTop    = UDim.new(0, px)
+    p.PaddingBottom = UDim.new(0, px)
+    p.Parent = parent
+    return p
+end
+
+local function makeDraggable(frame, handle)
+    local dragging, dragInput, dragStart, startPos
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging, dragStart, startPos = true, input.Position, frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+-- ── RGui.new(title, customTheme) ─────────────────────────────────────────────
+function RGui.new(title, customTheme)
+    local self = setmetatable({}, RGui)
+    title = title or "R-GUI"
+
+    local theme = {}
+    for k, v in pairs(RGui.DefaultTheme) do theme[k] = v end
+    if customTheme then
+        for k, v in pairs(customTheme) do theme[k] = v end
+    end
+    self._theme = theme
+
+    local screen = Instance.new("ScreenGui")
+    screen.Name = "RGui_" .. title
+    screen.ResetOnSpawn = false
+    screen.Parent = CoreGui
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.BackgroundTransparency = 1
+    mainFrame.Position = UDim2.new(0.5, -200, 0.3, 0)
+    mainFrame.Size = UDim2.new(0, 400, 0, 300)
+    mainFrame.Parent = screen
+
+    -- Titlebar
+    local titleBar = Instance.new("Frame")
+    titleBar.Name = "TitleBar"
+    titleBar.BackgroundColor3 = theme.TitleBg
+    titleBar.Size = UDim2.new(1, 0, 0, 24)
+    titleBar.Parent = mainFrame
+    applyCorner(titleBar, 2)
+    applyBorder(titleBar, theme.Border)
+
+    local titleLbl = Instance.new("TextLabel")
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.Position = UDim2.new(0, 8, 0, 0)
+    titleLbl.Size = UDim2.new(1, -60, 1, 0)
+    titleLbl.Font = Enum.Font.RobotoMono
+    titleLbl.Text = title
+    titleLbl.TextColor3 = theme.Text
+    titleLbl.TextSize = 13
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.Parent = titleBar
+
+    local collapseBtn = Instance.new("TextButton")
+    collapseBtn.BackgroundTransparency = 1
+    collapseBtn.Position = UDim2.new(1, -44, 0, 0)
+    collapseBtn.Size = UDim2.new(0, 20, 1, 0)
+    collapseBtn.Font = Enum.Font.RobotoMono
+    collapseBtn.Text = "-"
+    collapseBtn.TextColor3 = theme.SubText
+    collapseBtn.TextSize = 14
+    collapseBtn.Parent = titleBar
+
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.BackgroundTransparency = 1
+    closeBtn.Position = UDim2.new(1, -20, 0, 0)
+    closeBtn.Size = UDim2.new(0, 20, 1, 0)
+    closeBtn.Font = Enum.Font.RobotoMono
+    closeBtn.Text = "×"
+    closeBtn.TextColor3 = theme.SubText
+    closeBtn.TextSize = 16
+    closeBtn.Parent = titleBar
+
+    -- Body
+    local body = Instance.new("Frame")
+    body.Name = "Body"
+    body.BackgroundColor3 = theme.WindowBg
+    body.Position = UDim2.new(0, 0, 0, 23)
+    body.Size = UDim2.new(1, 0, 1, -23)
+    body.ClipsDescendants = true
+    body.Parent = mainFrame
+    applyCorner(body, 2)
+    applyBorder(body, theme.Border)
+
+    local isCollapsed = false
+    collapseBtn.MouseButton1Click:Connect(function()
+        isCollapsed = not isCollapsed
+        body.Visible = not isCollapsed
+        collapseBtn.Text = isCollapsed and "+" or "-"
+    end)
+    closeBtn.MouseButton1Click:Connect(function()
+        screen:Destroy()
+    end)
+
+    -- Tab container
+    local tabContainer = Instance.new("Frame")
+    tabContainer.BackgroundColor3 = theme.TabBarBg
+    tabContainer.Size = UDim2.new(1, 0, 0, 26)
+    tabContainer.Parent = body
+    applyBorder(tabContainer, theme.Border)
+
+    local tabLayout = Instance.new("UIListLayout")
+    tabLayout.FillDirection = Enum.FillDirection.Horizontal
+    tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    tabLayout.Parent = tabContainer
+
+    -- Page container
+    local pageContainer = Instance.new("Frame")
+    pageContainer.BackgroundTransparency = 1
+    pageContainer.Position = UDim2.new(0, 0, 0, 26)
+    pageContainer.Size = UDim2.new(1, 0, 1, -26)
+    pageContainer.Parent = body
+
+    -- Resizer
+    local resizer = Instance.new("TextButton")
+    resizer.BackgroundTransparency = 1
+    resizer.Size = UDim2.new(0, 12, 0, 12)
+    resizer.Position = UDim2.new(1, -12, 1, -12)
+    resizer.Text = "◢"
+    resizer.TextColor3 = theme.SubText
+    resizer.TextSize = 10
+    resizer.ZIndex = 10
+    resizer.Parent = body
+
+    local resizing, resizeStart, startSize = false
+    resizer.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            resizing, resizeStart, startSize = true, input.Position, mainFrame.Size
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then resizing = false end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - resizeStart
+            mainFrame.Size = UDim2.new(
+                0, math.clamp(startSize.X.Offset + delta.X, 250, 800),
+                0, math.clamp(startSize.Y.Offset + delta.Y, 150, 800)
+            )
+        end
+    end)
+
+    makeDraggable(mainFrame, titleBar)
+
+    self._screen = screen
+    self._mainFrame = mainFrame
+    self._tabContainer = tabContainer
+    self._pageContainer = pageContainer
+    self._tabs = {}
+    self._watermark = nil
+
+    return self
+end
+
+-- ── Window:AddTab(name) ───────────────────────────────────────────────────────
+function RGui:AddTab(name)
+    local theme = self._theme
+
+    local tabBtn = Instance.new("TextButton")
+    tabBtn.BackgroundColor3 = theme.TabNormal
+    tabBtn.Size = UDim2.new(0, 0, 1, 0)
+    tabBtn.Font = Enum.Font.RobotoMono
+    tabBtn.Text = name
+    tabBtn.TextColor3 = theme.TabNormalText
+    tabBtn.TextSize = 13
+    tabBtn.Parent = self._tabContainer
+    applyBorder(tabBtn, theme.Border)
+
+    local txtSize = TextService:GetTextSize(name, 13, Enum.Font.RobotoMono, Vector2.new(999, 26))
+    tabBtn.Size = UDim2.new(0, txtSize.X + 16, 1, 0)
+
+    local page = Instance.new("ScrollingFrame")
+    page.BackgroundTransparency = 1
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.ScrollBarThickness = 4
+    page.ScrollBarImageColor3 = theme.Accent
+    page.Visible = false
+    page.Parent = self._pageContainer
+    applyPadding(page, 8)
+
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 6)
+    layout.Parent = page
+
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 16)
+    end)
+
+    table.insert(self._tabs, {Button = tabBtn, Page = page})
+
+    tabBtn.MouseButton1Click:Connect(function()
+        for _, t in ipairs(self._tabs) do
+            t.Page.Visible = false
+            t.Button.BackgroundColor3 = theme.TabNormal
+            t.Button.TextColor3 = theme.TabNormalText
+        end
+        page.Visible = true
+        tabBtn.BackgroundColor3 = theme.TabActive
+        tabBtn.TextColor3 = theme.TabActiveText
+    end)
+
+    if #self._tabs == 1 then
+        page.Visible = true
+        tabBtn.BackgroundColor3 = theme.TabActive
+        tabBtn.TextColor3 = theme.TabActiveText
+    end
+
+    local tabObj = setmetatable({}, TabComponent)
+    tabObj._page = page
+    tabObj._layoutOrder = 0
+    tabObj._window = self
+    return tabObj
+end
+
+function TabComponent:_nextOrder()
+    self._layoutOrder = self._layoutOrder + 1
+    return self._layoutOrder
+end
+
+local function getTheme(tab)
+    return tab._window._theme
+end
+
+-- ── Tab:AddButton(text, callback) ────────────────────────────────────────────
+function TabComponent:AddButton(text, callback)
+    local theme = getTheme(self)
+    local btn = Instance.new("TextButton")
+    btn.BackgroundColor3 = theme.FrameBg
+    btn.Size = UDim2.new(1, 0, 0, 24)
+    btn.LayoutOrder = self:_nextOrder()
+    btn.Font = Enum.Font.RobotoMono
+    btn.Text = text
+    btn.TextColor3 = theme.Text
+    btn.TextSize = 13
+    btn.Parent = self._page
+    applyCorner(btn, 2)
+    applyBorder(btn, theme.Border)
+
+    btn.MouseEnter:Connect(function() btn.BackgroundColor3 = theme.FrameBgHover end)
+    btn.MouseLeave:Connect(function() btn.BackgroundColor3 = theme.FrameBg end)
+
+    if callback then
+        btn.MouseButton1Click:Connect(function()
+            TweenService:Create(btn, TWEEN_FAST, {BackgroundColor3 = theme.Accent}):Play()
+            task.delay(0.1, function()
+                TweenService:Create(btn, TWEEN_FAST, {BackgroundColor3 = theme.FrameBgHover}):Play()
+            end)
+            callback()
+        end)
+    end
+    return btn
+end
+
+-- ── Tab:AddCheckbox(text, default, callback) ─────────────────────────────────
+function TabComponent:AddCheckbox(text, default, callback)
+    local theme = getTheme(self)
+    local checked = default or false
+
+    local row = Instance.new("TextButton")
+    row.BackgroundColor3 = theme.FrameBg
+    row.Size = UDim2.new(1, 0, 0, 24)
+    row.LayoutOrder = self:_nextOrder()
+    row.Text = ""
+    row.Parent = self._page
+    applyCorner(row, 2)
+    applyBorder(row, theme.Border)
+
+    row.MouseEnter:Connect(function() row.BackgroundColor3 = theme.FrameBgHover end)
+    row.MouseLeave:Connect(function() row.BackgroundColor3 = theme.FrameBg end)
+
+    local check = Instance.new("TextLabel")
+    check.BackgroundColor3 = checked and theme.CheckOn or theme.CheckOff
+    check.Position = UDim2.new(0, 4, 0.5, -8)
+    check.Size = UDim2.new(0, 16, 0, 16)
+    check.Text = checked and "✓" or ""
+    check.TextColor3 = theme.Text
+    check.Font = Enum.Font.RobotoMono
+    check.TextSize = 12
+    check.Parent = row
+    applyCorner(check, 2)
+    applyBorder(check, theme.Accent)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.BackgroundTransparency = 1
+    lbl.Position = UDim2.new(0, 24, 0, 0)
+    lbl.Size = UDim2.new(1, -24, 1, 0)
+    lbl.Font = Enum.Font.RobotoMono
+    lbl.Text = text
+    lbl.TextColor3 = theme.Text
+    lbl.TextSize = 13
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
+
+    row.MouseButton1Click:Connect(function()
+        checked = not checked
+        check.Text = checked and "✓" or ""
+        TweenService:Create(check, TWEEN_FAST, {
+            BackgroundColor3 = checked and theme.CheckOn or theme.CheckOff
+        }):Play()
+        if callback then callback(checked) end
+    end)
+end
+
+-- ── Tab:AddSlider(text, min, max, default, callback) ─────────────────────────
+function TabComponent:AddSlider(text, min, max, default, callback)
+    local theme = getTheme(self)
+    min = min or 0
+    max = max or 100
+    default = math.clamp(default or min, min, max)
+    local value = default
+
+    local container = Instance.new("Frame")
+    container.BackgroundTransparency = 1
+    container.Size = UDim2.new(1, 0, 0, 24)
+    container.LayoutOrder = self:_nextOrder()
+    container.Parent = self._page
+
+    local track = Instance.new("TextButton")
+    track.BackgroundColor3 = theme.SliderTrack
+    track.Size = UDim2.new(1, 0, 1, 0)
+    track.Text = ""
+    track.Parent = container
+    applyCorner(track, 2)
+    applyBorder(track, theme.Border)
+
+    local fill = Instance.new("Frame")
+    fill.BackgroundColor3 = theme.SliderFill
+    fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+    fill.Parent = track
+    applyCorner(fill, 2)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.BackgroundTransparency = 1
+    lbl.Size = UDim2.new(1, 0, 1, 0)
+    lbl.Font = Enum.Font.RobotoMono
+    lbl.Text = string.format("%s: %d", text, value)
+    lbl.TextColor3 = theme.Text
+    lbl.TextSize = 13
+    lbl.ZIndex = 2
+    lbl.Parent = track
+
+    track.MouseEnter:Connect(function() track.BackgroundColor3 = theme.FrameBgHover end)
+    track.MouseLeave:Connect(function() track.BackgroundColor3 = theme.SliderTrack end)
+
+    local function updateFromInput(input)
+        local rel = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+        value = math.floor(min + (max - min) * rel + 0.5)
+        fill.Size = UDim2.new(rel, 0, 1, 0)
+        lbl.Text = string.format("%s: %d", text, value)
+        if callback then callback(value) end
+    end
+
+    local dragging = false
+    track.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            updateFromInput(i)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    end)
+    UserInputService.InputChanged:Connect(function(i)
+        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+            updateFromInput(i)
+        end
+    end)
+end
+
+-- ── Tab:AddDropdown(text, options, default, callback) ────────────────────────
+function TabComponent:AddDropdown(text, options, default, callback)
+    local theme = getTheme(self)
+    local selected = default or options[1]
+    local isOpen = false
+
+    local container = Instance.new("Frame")
+    container.BackgroundTransparency = 1
+    container.Size = UDim2.new(1, 0, 0, 24)
+    container.LayoutOrder = self:_nextOrder()
+    container.ClipsDescendants = true
+    container.Parent = self._page
+
+    local header = Instance.new("TextButton")
+    header.BackgroundColor3 = theme.FrameBg
+    header.Size = UDim2.new(1, 0, 0, 24)
+    header.Font = Enum.Font.RobotoMono
+    header.Text = string.format(" %s: %s", text, tostring(selected))
+    header.TextColor3 = theme.Text
+    header.TextSize = 13
+    header.TextXAlignment = Enum.TextXAlignment.Left
+    header.Parent = container
+    applyCorner(header, 2)
+    applyBorder(header, theme.Border)
+
+    local listFrame = Instance.new("Frame")
+    listFrame.BackgroundColor3 = theme.TabNormal
+    listFrame.Position = UDim2.new(0, 0, 0, 26)
+    listFrame.Size = UDim2.new(1, 0, 0, 0)
+    listFrame.ClipsDescendants = true
+    listFrame.Parent = container
+    applyBorder(listFrame, theme.Border)
+
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = listFrame
+
+    header.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
+        local targetHeight = isOpen and (26 + (#options * 22)) or 24
+        TweenService:Create(container, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+        TweenService:Create(listFrame, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, #options * 22)}):Play()
+    end)
+
+    for i, opt in ipairs(options) do
+        local optBtn = Instance.new("TextButton")
+        optBtn.BackgroundTransparency = 1
+        optBtn.Size = UDim2.new(1, 0, 0, 22)
+        optBtn.Font = Enum.Font.RobotoMono
+        optBtn.Text = " " .. tostring(opt)
+        optBtn.TextColor3 = theme.TabNormalText
+        optBtn.TextSize = 12
+        optBtn.TextXAlignment = Enum.TextXAlignment.Left
+        optBtn.LayoutOrder = i
+        optBtn.Parent = listFrame
+
+        optBtn.MouseEnter:Connect(function() optBtn.TextColor3 = theme.Accent end)
+        optBtn.MouseLeave:Connect(function() optBtn.TextColor3 = theme.TabNormalText end)
+
+        optBtn.MouseButton1Click:Connect(function()
+            selected = opt
+            header.Text = string.format(" %s: %s", text, tostring(selected))
+            isOpen = false
+            TweenService:Create(container, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 24)}):Play()
+            TweenService:Create(listFrame, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 0)}):Play()
+            if callback then callback(selected) end
+        end)
+    end
+end
+
+-- ── Tab:AddSearchableDropdown(text, options, default, callback) ──────────────
+function TabComponent:AddSearchableDropdown(text, options, default, callback)
+    local theme = getTheme(self)
+    local selected = default or options[1]
+    local isOpen = false
+    local searchText = ""
+
+    local container = Instance.new("Frame")
+    container.BackgroundTransparency = 1
+    container.Size = UDim2.new(1, 0, 0, 24)
+    container.LayoutOrder = self:_nextOrder()
+    container.ClipsDescendants = true
+    container.Parent = self._page
+
+    local header = Instance.new("TextButton")
+    header.BackgroundColor3 = theme.FrameBg
+    header.Size = UDim2.new(1, 0, 0, 24)
+    header.Font = Enum.Font.RobotoMono
+    header.Text = string.format(" %s: %s", text, tostring(selected))
+    header.TextColor3 = theme.Text
+    header.TextSize = 13
+    header.TextXAlignment = Enum.TextXAlignment.Left
+    header.Parent = container
+    applyCorner(header, 2)
+    applyBorder(header, theme.Border)
+
+    local listFrame = Instance.new("Frame")
+    listFrame.BackgroundColor3 = theme.TabNormal
+    listFrame.Position = UDim2.new(0, 0, 0, 26)
+    listFrame.Size = UDim2.new(1, 0, 0, 0)
+    listFrame.ClipsDescendants = true
+    listFrame.Parent = container
+    applyBorder(listFrame, theme.Border)
+
+    local searchBox = Instance.new("TextBox")
+    searchBox.BackgroundColor3 = theme.FrameBg
+    searchBox.Size = UDim2.new(1, -8, 0, 22)
+    searchBox.Position = UDim2.new(0, 4, 0, 2)
+    searchBox.Font = Enum.Font.RobotoMono
+    searchBox.Text = ""
+    searchBox.PlaceholderText = "Search..."
+    searchBox.PlaceholderColor3 = theme.SubText
+    searchBox.TextColor3 = theme.Text
+    searchBox.TextSize = 12
+    searchBox.Parent = listFrame
+    applyCorner(searchBox, 2)
+    applyBorder(searchBox, theme.Border)
+
+    local optionList = Instance.new("Frame")
+    optionList.BackgroundTransparency = 1
+    optionList.Size = UDim2.new(1, 0, 0, 0)
+    optionList.Position = UDim2.new(0, 0, 0, 28)
+    optionList.Parent = listFrame
+
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = optionList
+
+    local optionButtons = {}
+    for i, opt in ipairs(options) do
+        local btn = Instance.new("TextButton")
+        btn.BackgroundTransparency = 1
+        btn.Size = UDim2.new(1, 0, 0, 22)
+        btn.Font = Enum.Font.RobotoMono
+        btn.Text = " " .. tostring(opt)
+        btn.TextColor3 = theme.TabNormalText
+        btn.TextSize = 12
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.LayoutOrder = i
+        btn.Parent = optionList
+
+        btn.MouseEnter:Connect(function() btn.TextColor3 = theme.Accent end)
+        btn.MouseLeave:Connect(function() btn.TextColor3 = theme.TabNormalText end)
+
+        btn.MouseButton1Click:Connect(function()
+            selected = opt
+            header.Text = string.format(" %s: %s", text, tostring(selected))
+            isOpen = false
+            TweenService:Create(container, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 24)}):Play()
+            TweenService:Create(listFrame, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 0)}):Play()
+            if callback then callback(selected) end
+        end)
+        table.insert(optionButtons, btn)
+    end
+
+    local function filterOptions()
+        local q = searchBox.Text:lower()
+        local visibleCount = 0
+        for _, btn in ipairs(optionButtons) do
+            local match = (q == "" or btn.Text:lower():find(q, 1, true))
+            btn.Visible = match
+            if match then visibleCount = visibleCount + 1 end
+        end
+        optionList.Size = UDim2.new(1, 0, 0, visibleCount * 22)
+        local totalHeight = 28 + visibleCount * 22
+        if isOpen then
+            TweenService:Create(container, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 26 + totalHeight)}):Play()
+            TweenService:Create(listFrame, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, totalHeight)}):Play()
+        end
+    end
+
+    searchBox:GetPropertyChangedSignal("Text"):Connect(filterOptions)
+
+    header.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
+        if isOpen then
+            filterOptions()
+        else
+            TweenService:Create(container, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 24)}):Play()
+            TweenService:Create(listFrame, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 0)}):Play()
+        end
+    end)
+end
+
+-- ── Tab:AddMultiSelectDropdown(text, options, defaults, callback) ────────────
+function TabComponent:AddMultiSelectDropdown(text, options, defaults, callback)
+    local theme = getTheme(self)
+    local selected = {}
+    if defaults then
+        for _, v in ipairs(defaults) do
+            selected[v] = true
+        end
+    end
+    local isOpen = false
+
+    local container = Instance.new("Frame")
+    container.BackgroundTransparency = 1
+    container.Size = UDim2.new(1, 0, 0, 24)
+    container.LayoutOrder = self:_nextOrder()
+    container.ClipsDescendants = true
+    container.Parent = self._page
+
+    local header = Instance.new("TextButton")
+    header.BackgroundColor3 = theme.FrameBg
+    header.Size = UDim2.new(1, 0, 0, 24)
+    header.Font = Enum.Font.RobotoMono
+    header.TextColor3 = theme.Text
+    header.TextSize = 13
+    header.TextXAlignment = Enum.TextXAlignment.Left
+    header.Parent = container
+    applyCorner(header, 2)
+    applyBorder(header, theme.Border)
+
+    local function updateHeader()
+        local count = 0
+        for _ in pairs(selected) do count = count + 1 end
+        if count == 0 then
+            header.Text = string.format(" %s: None", text)
+        elseif count == #options then
+            header.Text = string.format(" %s: All", text)
+        else
+            header.Text = string.format(" %s: %d selected", text, count)
+        end
+    end
+    updateHeader()
+
+    local listFrame = Instance.new("Frame")
+    listFrame.BackgroundColor3 = theme.TabNormal
+    listFrame.Position = UDim2.new(0, 0, 0, 26)
+    listFrame.Size = UDim2.new(1, 0, 0, 0)
+    listFrame.ClipsDescendants = true
+    listFrame.Parent = container
+    applyBorder(listFrame, theme.Border)
+
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.BackgroundTransparency = 1
+    scroll.Size = UDim2.new(1, 0, 1, 0)
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scroll.ScrollBarThickness = 4
+    scroll.ScrollBarImageColor3 = theme.Accent
+    scroll.Parent = listFrame
+
+    local optionLayout = Instance.new("UIListLayout")
+    optionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    optionLayout.Parent = scroll
+
+    local selectAllBtn = Instance.new("TextButton")
+    selectAllBtn.BackgroundColor3 = theme.FrameBg
+    selectAllBtn.Size = UDim2.new(1, -8, 0, 20)
+    selectAllBtn.Position = UDim2.new(0, 4, 0, 2)
+    selectAllBtn.Font = Enum.Font.RobotoMono
+    selectAllBtn.Text = "Select All"
+    selectAllBtn.TextColor3 = theme.Accent
+    selectAllBtn.TextSize = 12
+    selectAllBtn.Parent = listFrame
+    applyCorner(selectAllBtn, 2)
+    applyBorder(selectAllBtn, theme.Border)
+
+    local deselectAllBtn = Instance.new("TextButton")
+    deselectAllBtn.BackgroundColor3 = theme.FrameBg
+    deselectAllBtn.Size = UDim2.new(1, -8, 0, 20)
+    deselectAllBtn.Position = UDim2.new(0, 4, 0, 24)
+    deselectAllBtn.Font = Enum.Font.RobotoMono
+    deselectAllBtn.Text = "Deselect All"
+    deselectAllBtn.TextColor3 = theme.Accent
+    deselectAllBtn.TextSize = 12
+    deselectAllBtn.Parent = listFrame
+    applyCorner(deselectAllBtn, 2)
+    applyBorder(deselectAllBtn, theme.Border)
+
+    local optionStartY = 48
+    local optionHeight = 22
+    local optionButtons = {}
+    for i, opt in ipairs(options) do
+        local btn = Instance.new("TextButton")
+        btn.BackgroundTransparency = 1
+        btn.Size = UDim2.new(1, -8, 0, optionHeight)
+        btn.Position = UDim2.new(0, 4, 0, optionStartY + (i-1)*optionHeight)
+        btn.Font = Enum.Font.RobotoMono
+        btn.Text = " " .. tostring(opt)
+        btn.TextColor3 = theme.TabNormalText
+        btn.TextSize = 12
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.Parent = scroll
+
+        local checkIndicator = Instance.new("TextLabel")
+        checkIndicator.BackgroundTransparency = 1
+        checkIndicator.AnchorPoint = Vector2.new(1, 0)
+        checkIndicator.Position = UDim2.new(1, -6, 0, 3)
+        checkIndicator.Size = UDim2.new(0, 16, 0, 16)
+        checkIndicator.Font = Enum.Font.RobotoMono
+        checkIndicator.Text = selected[opt] and "✓" or ""
+        checkIndicator.TextColor3 = theme.Accent
+        checkIndicator.TextSize = 12
+        checkIndicator.Parent = btn
+
+        btn.MouseEnter:Connect(function() btn.TextColor3 = theme.Accent end)
+        btn.MouseLeave:Connect(function() btn.TextColor3 = theme.TabNormalText end)
+
+        btn.MouseButton1Click:Connect(function()
+            if selected[opt] then
+                selected[opt] = nil
+            else
+                selected[opt] = true
+            end
+            checkIndicator.Text = selected[opt] and "✓" or ""
+            updateHeader()
+            if callback then
+                local t = {}
+                for k in pairs(selected) do table.insert(t, k) end
+                callback(t)
+            end
+        end)
+        optionButtons[opt] = {btn = btn, check = checkIndicator}
+    end
+
+    scroll.CanvasSize = UDim2.new(0, 0, 0, #options * optionHeight)
+
+    local function openClose()
+        isOpen = not isOpen
+        if isOpen then
+            local totalHeight = 48 + #options * optionHeight
+            local displayedHeight = math.min(totalHeight, 180)
+            scroll.Size = UDim2.new(1, 0, 0, displayedHeight)
+            TweenService:Create(container, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 26 + 2 + displayedHeight)}):Play()
+            TweenService:Create(listFrame, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 2 + displayedHeight)}):Play()
+        else
+            TweenService:Create(container, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 24)}):Play()
+            TweenService:Create(listFrame, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 0)}):Play()
+        end
+    end
+
+    header.MouseButton1Click:Connect(openClose)
+    selectAllBtn.MouseButton1Click:Connect(function()
+        for _, opt in ipairs(options) do
+            selected[opt] = true
+            if optionButtons[opt] then
+                optionButtons[opt].check.Text = "✓"
+            end
+        end
+        updateHeader()
+        if callback then callback(options) end
+    end)
+    deselectAllBtn.MouseButton1Click:Connect(function()
+        for k in pairs(selected) do selected[k] = nil end
+        for _, opt in ipairs(options) do
+            if optionButtons[opt] then
+                optionButtons[opt].check.Text = ""
+            end
+        end
+        updateHeader()
+        if callback then callback({}) end
+    end)
+end
+
+-- ── Tab:AddMultiSelectSearchableDropdown(text, options, defaults, callback) ──
+function TabComponent:AddMultiSelectSearchableDropdown(text, options, defaults, callback)
+    local theme = getTheme(self)
+    local selected = {}
+    if defaults then
+        for _, v in ipairs(defaults) do
+            selected[v] = true
+        end
+    end
+    local isOpen = false
+    local searchText = ""
+
+    local container = Instance.new("Frame")
+    container.BackgroundTransparency = 1
+    container.Size = UDim2.new(1, 0, 0, 24)
+    container.LayoutOrder = self:_nextOrder()
+    container.ClipsDescendants = true
+    container.Parent = self._page
+
+    local header = Instance.new("TextButton")
+    header.BackgroundColor3 = theme.FrameBg
+    header.Size = UDim2.new(1, 0, 0, 24)
+    header.Font = Enum.Font.RobotoMono
+    header.TextColor3 = theme.Text
+    header.TextSize = 13
+    header.TextXAlignment = Enum.TextXAlignment.Left
+    header.Parent = container
+    applyCorner(header, 2)
+    applyBorder(header, theme.Border)
+
+    local function updateHeader()
+        local count = 0
+        for _ in pairs(selected) do count = count + 1 end
+        if count == 0 then
+            header.Text = string.format(" %s: None", text)
+        elseif count == #options then
+            header.Text = string.format(" %s: All", text)
+        else
+            header.Text = string.format(" %s: %d selected", text, count)
+        end
+    end
+    updateHeader()
+
+    local listFrame = Instance.new("Frame")
+    listFrame.BackgroundColor3 = theme.TabNormal
+    listFrame.Position = UDim2.new(0, 0, 0, 26)
+    listFrame.Size = UDim2.new(1, 0, 0, 0)
+    listFrame.ClipsDescendants = true
+    listFrame.Parent = container
+    applyBorder(listFrame, theme.Border)
+
+    local searchBox = Instance.new("TextBox")
+    searchBox.BackgroundColor3 = theme.FrameBg
+    searchBox.Size = UDim2.new(1, -8, 0, 22)
+    searchBox.Position = UDim2.new(0, 4, 0, 2)
+    searchBox.Font = Enum.Font.RobotoMono
+    searchBox.Text = ""
+    searchBox.PlaceholderText = "Search..."
+    searchBox.PlaceholderColor3 = theme.SubText
+    searchBox.TextColor3 = theme.Text
+    searchBox.TextSize = 12
+    searchBox.Parent = listFrame
+    applyCorner(searchBox, 2)
+    applyBorder(searchBox, theme.Border)
+
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.BackgroundTransparency = 1
+    scroll.Size = UDim2.new(1, 0, 0, 0)
+    scroll.Position = UDim2.new(0, 0, 0, 30)
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scroll.ScrollBarThickness = 4
+    scroll.ScrollBarImageColor3 = theme.Accent
+    scroll.Parent = listFrame
+
+    local optionLayout = Instance.new("UIListLayout")
+    optionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    optionLayout.Parent = scroll
+
+    local optionButtons = {}
+    for i, opt in ipairs(options) do
+        local btn = Instance.new("TextButton")
+        btn.BackgroundTransparency = 1
+        btn.Size = UDim2.new(1, -8, 0, 22)
+        btn.Font = Enum.Font.RobotoMono
+        btn.Text = " " .. tostring(opt)
+        btn.TextColor3 = theme.TabNormalText
+        btn.TextSize = 12
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.LayoutOrder = i
+        btn.Parent = scroll
+
+        local checkIndicator = Instance.new("TextLabel")
+        checkIndicator.BackgroundTransparency = 1
+        checkIndicator.AnchorPoint = Vector2.new(1, 0)
+        checkIndicator.Position = UDim2.new(1, -6, 0, 3)
+        checkIndicator.Size = UDim2.new(0, 16, 0, 16)
+        checkIndicator.Font = Enum.Font.RobotoMono
+        checkIndicator.Text = selected[opt] and "✓" or ""
+        checkIndicator.TextColor3 = theme.Accent
+        checkIndicator.TextSize = 12
+        checkIndicator.Parent = btn
+
+        btn.MouseEnter:Connect(function()
+            if btn.Visible then btn.TextColor3 = theme.Accent end
+        end)
+        btn.MouseLeave:Connect(function()
+            if btn.Visible then btn.TextColor3 = theme.TabNormalText end
+        end)
+        btn.MouseButton1Click:Connect(function()
+            if selected[opt] then selected[opt] = nil else selected[opt] = true end
+            checkIndicator.Text = selected[opt] and "✓" or ""
+            updateHeader()
+            if callback then
+                local t = {}
+                for k in pairs(selected) do table.insert(t, k) end
+                callback(t)
+            end
+        end)
+        optionButtons[opt] = {btn = btn, check = checkIndicator}
+    end
+
+    local function filterAndResize()
+        local q = searchBox.Text:lower()
+        local visibleCount = 0
+        for _, opt in ipairs(options) do
+            local btnData = optionButtons[opt]
+            local match = (q == "" or opt:lower():find(q, 1, true))
+            btnData.btn.Visible = match
+            if match then visibleCount = visibleCount + 1 end
+        end
+        local totalOptionHeight = visibleCount * 22
+        scroll.CanvasSize = UDim2.new(0, 0, 0, totalOptionHeight)
+        if isOpen then
+            local listHeight = 30 + math.min(totalOptionHeight, 150)
+            scroll.Size = UDim2.new(1, 0, 0, math.min(totalOptionHeight, 150))
+            TweenService:Create(container, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 26 + listHeight)}):Play()
+            TweenService:Create(listFrame, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, listHeight)}):Play()
+        end
+    end
+
+    searchBox:GetPropertyChangedSignal("Text"):Connect(filterAndResize)
+
+    header.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
+        if isOpen then
+            filterAndResize()
+        else
+            TweenService:Create(container, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 24)}):Play()
+            TweenService:Create(listFrame, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, 0)}):Play()
+        end
+    end)
+end
+
+-- ── Tab:AddColorPicker(text, defaultColor, callback) ─────────────────────────
+function TabComponent:AddColorPicker(text, defaultColor, callback)
+    local theme = getTheme(self)
+    local color = defaultColor or Color3.new(1, 1, 1)
+    local r, g, b = color.R, color.G, color.B
+    local isOpen = false
+
+    local container = Instance.new("Frame")
+    container.BackgroundTransparency = 1
+    container.Size = UDim2.new(1, 0, 0, 24)
+    container.LayoutOrder = self:_nextOrder()
+    container.ClipsDescendants = true
+    container.Parent = self._page
+
+    local header = Instance.new("TextButton")
+    header.BackgroundColor3 = theme.FrameBg
+    header.Size = UDim2.new(1, 0, 0, 24)
+    header.Font = Enum.Font.RobotoMono
+    header.Text = " " .. text
+    header.TextColor3 = theme.Text
+    header.TextSize = 13
+    header.TextXAlignment = Enum.TextXAlignment.Left
+    header.Parent = container
+    applyCorner(header, 2)
+    applyBorder(header, theme.Border)
+
+    local preview = Instance.new("Frame")
+    preview.AnchorPoint = Vector2.new(1, 0.5)
+    preview.Position = UDim2.new(1, -4, 0.5, 0)
+    preview.Size = UDim2.new(0, 16, 0, 16)
+    preview.BackgroundColor3 = color
+    preview.Parent = header
+    applyCorner(preview, 2)
+    applyBorder(preview, theme.Border)
+
+    local expandFrame = Instance.new("Frame")
+    expandFrame.BackgroundColor3 = theme.TabNormal
+    expandFrame.Position = UDim2.new(0, 0, 0, 26)
+    expandFrame.Size = UDim2.new(1, 0, 0, 90)
+    expandFrame.Parent = container
+    applyBorder(expandFrame, theme.Border)
+
+    header.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
+        local targetHeight = isOpen and (24 + 90) or 24
+        TweenService:Create(container, TWEEN_FAST, {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+    end)
+
+    local function createChannelSlider(channelName, yPos, initialVal, channelUpdater)
+        local label = Instance.new("TextLabel")
+        label.BackgroundTransparency = 1
+        label.Position = UDim2.new(0, 6, 0, yPos)
+        label.Size = UDim2.new(0, 14, 0, 20)
+        label.Font = Enum.Font.RobotoMono
+        label.Text = channelName
+        label.TextColor3 = theme.SubText
+        label.TextSize = 12
+        label.Parent = expandFrame
+
+        local track = Instance.new("Frame")
+        track.BackgroundColor3 = theme.SliderTrack
+        track.Position = UDim2.new(0, 26, 0, yPos + 7)
+        track.Size = UDim2.new(1, -34, 0, 6)
+        track.Parent = expandFrame
+        applyCorner(track, 2)
+        applyBorder(track, theme.Border)
+
+        local fill = Instance.new("Frame")
+        fill.BackgroundColor3 = theme.Accent
+        fill.Size = UDim2.new(initialVal, 0, 1, 0)
+        fill.Parent = track
+        applyCorner(fill, 2)
+
+        local handle = Instance.new("TextButton")
+        handle.AnchorPoint = Vector2.new(0.5, 0.5)
+        handle.Position = UDim2.new(initialVal, 0, 0.5, 0)
+        handle.Size = UDim2.new(0, 8, 0, 16)
+        handle.BackgroundColor3 = theme.Text
+        handle.Text = ""
+        handle.Parent = track
+        applyCorner(handle, 2)
+
+        local dragging = false
+        local function onDrag(input)
+            local rel = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+            handle.Position = UDim2.new(rel, 0, 0.5, 0)
+            fill.Size = UDim2.new(rel, 0, 1, 0)
+            channelUpdater(rel)
+            preview.BackgroundColor3 = Color3.new(r, g, b)
+            if callback then callback(Color3.new(r, g, b)) end
+        end
+
+        handle.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+        end)
+        UserInputService.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+        end)
+        UserInputService.InputChanged:Connect(function(i)
+            if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then onDrag(i) end
+        end)
+        track.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then onDrag(i) end
+        end)
+    end
+
+    createChannelSlider("R", 8,  r, function(v) r = v end)
+    createChannelSlider("G", 34, g, function(v) g = v end)
+    createChannelSlider("B", 60, b, function(v) b = v end)
+end
+
+-- ── Tab:AddLabel(text, color) ─────────────────────────────────────────────────
+function TabComponent:AddLabel(text, color)
+    local theme = getTheme(self)
+    local lbl = Instance.new("TextLabel")
+    lbl.BackgroundTransparency = 1
+    lbl.Size = UDim2.new(1, 0, 0, 0)
+    lbl.LayoutOrder = self:_nextOrder()
+    lbl.Font = Enum.Font.RobotoMono
+    lbl.Text = text
+    lbl.TextColor3 = color or theme.Text
+    lbl.TextSize = 13
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.TextWrapped = true
+    lbl.RichText = true
+    lbl.Parent = self._page
+
+    lbl:GetPropertyChangedSignal("TextBounds"):Connect(function()
+        lbl.Size = UDim2.new(1, 0, 0, lbl.TextBounds.Y + 2)
+    end)
+    return lbl
+end
+
+-- ── Tab:AddSection(text) ─────────────────────────────────────────────────────
+function TabComponent:AddSection(text)
+    local theme = getTheme(self)
+    local lbl = Instance.new("TextLabel")
+    lbl.BackgroundTransparency = 1
+    lbl.Size = UDim2.new(1, 0, 0, 18)
+    lbl.LayoutOrder = self:_nextOrder()
+    lbl.Font = Enum.Font.RobotoMono
+    lbl.Text = "── " .. text .. " ──"
+    lbl.TextColor3 = theme.Accent
+    lbl.TextSize = 12
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = self._page
+    return lbl
+end
+
+-- ── Tab:AddSeparator() ───────────────────────────────────────────────────────
+function TabComponent:AddSeparator()
+    local theme = getTheme(self)
+    local sep = Instance.new("Frame")
+    sep.BackgroundColor3 = theme.Border
+    sep.Size = UDim2.new(1, 0, 0, 1)
+    sep.LayoutOrder = self:_nextOrder()
+    sep.Parent = self._page
+    return sep
+end
+
+-- ── NEW: Tab:AddTextBox(text, placeholder, default, callback) ────────────────
+function TabComponent:AddTextBox(text, placeholder, default, callback)
+    local theme = getTheme(self)
+    local currentText = default or ""
+
+    local row = Instance.new("Frame")
+    row.BackgroundTransparency = 1
+    row.Size = UDim2.new(1, 0, 0, 24)
+    row.LayoutOrder = self:_nextOrder()
+    row.Parent = self._page
+
+    -- Label on the left
+    local lbl = Instance.new("TextLabel")
+    lbl.BackgroundTransparency = 1
+    lbl.Size = UDim2.new(0, text and (TextService:GetTextSize(text, 13, Enum.Font.RobotoMono, Vector2.new(999, 24)).X + 8) or 0, 1, 0)
+    lbl.Font = Enum.Font.RobotoMono
+    lbl.Text = text .. ":"
+    lbl.TextColor3 = theme.Text
+    lbl.TextSize = 13
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
+
+    -- TextBox on the right
+    local box = Instance.new("TextBox")
+    box.BackgroundColor3 = theme.FrameBg
+    box.Position = UDim2.new(0, lbl.Size.X.Offset + 4, 0, 0)
+    box.Size = UDim2.new(1, -(lbl.Size.X.Offset + 4), 1, 0)
+    box.Font = Enum.Font.RobotoMono
+    box.PlaceholderText = placeholder or ""
+    box.PlaceholderColor3 = theme.SubText
+    box.Text = currentText
+    box.TextColor3 = theme.Text
+    box.TextSize = 13
+    box.TextXAlignment = Enum.TextXAlignment.Left
+    box.Parent = row
+    applyCorner(box, 2)
+    applyBorder(box, theme.Border)
+
+    if callback then
+        box:GetPropertyChangedSignal("Text"):Connect(function()
+            currentText = box.Text
+            callback(currentText)
+        end)
+    end
+
+    return box
+end
+
+-- ── Window:CreateWatermark(text, options) ───────────────────────────────────
+function RGui:CreateWatermark(text, options)
+    local theme = self._theme
+    options = options or {}
+
+    local wmGui = Instance.new("ScreenGui")
+    wmGui.Name = "RGui_Watermark"
+    wmGui.ResetOnSpawn = false
+    wmGui.Parent = CoreGui
+
+    local wmFrame = Instance.new("Frame")
+    wmFrame.BackgroundColor3 = options.BackgroundColor or theme.TitleBg
+    wmFrame.BackgroundTransparency = options.BackgroundTransparency or 0.5
+    wmFrame.Position = options.Position or UDim2.new(0, 10, 0, 10)
+    wmFrame.Size = UDim2.new(0, 0, 0, 0)    -- auto‑size later
+    wmFrame.Parent = wmGui
+    applyCorner(wmFrame, 4)
+    applyBorder(wmFrame, theme.Border)
+
+    local icon
+    if options.Icon then
+        icon = Instance.new("ImageLabel")
+        icon.BackgroundTransparency = 1
+        icon.Size = UDim2.new(0, 20, 0, 20)
+        icon.Position = UDim2.new(0, 4, 0.5, -10)
+        icon.Image = options.Icon
+        icon.Parent = wmFrame
+    end
+
+    local wmLabel = Instance.new("TextLabel")
+    wmLabel.BackgroundTransparency = 1
+    wmLabel.Font = options.Font or Enum.Font.RobotoMono
+    wmLabel.Text = text
+    wmLabel.TextColor3 = options.TextColor or theme.Text
+    wmLabel.TextSize = options.TextSize or 14
+    wmLabel.TextXAlignment = Enum.TextXAlignment.Left
+    wmLabel.RichText = true
+    wmLabel.Parent = wmFrame
+
+    if icon then
+        wmLabel.Position = UDim2.new(0, 28, 0, 0)
+        wmLabel.Size = UDim2.new(1, -32, 1, 0)
+    else
+        wmLabel.Position = UDim2.new(0, 8, 0, 0)
+        wmLabel.Size = UDim2.new(1, -16, 1, 0)
+    end
+
+    local function updateSize()
+        local textBounds = TextService:GetTextSize(
+            wmLabel.Text, wmLabel.TextSize, wmLabel.Font,
+            Vector2.new(math.huge, math.huge)
+        )
+        wmFrame.Size = UDim2.new(
+            0, textBounds.X + 16 + (icon and 24 or 0),
+            0, math.max(textBounds.Y + 8, 28)
+        )
+    end
+    updateSize()
+
+    makeDraggable(wmFrame, wmFrame)
+
+    -- Build custom object with methods
+    local wmObj = {}
+
+    function wmObj:Destroy()
+        wmGui:Destroy()
+    end
+
+    function wmObj:Update(newText, newOptions)
+        if newText ~= nil then
+            wmLabel.Text = newText
+        end
+        if newOptions then
+            -- Update icon
+            if newOptions.Icon ~= nil then
+                if newOptions.Icon == "" or newOptions.Icon == false then
+                    if icon then
+                        icon:Destroy()
+                        icon = nil
+                        wmLabel.Position = UDim2.new(0, 8, 0, 0)
+                        wmLabel.Size = UDim2.new(1, -16, 1, 0)
+                    end
+                else
+                    if not icon then
+                        icon = Instance.new("ImageLabel")
+                        icon.BackgroundTransparency = 1
+                        icon.Size = UDim2.new(0, 20, 0, 20)
+                        icon.Position = UDim2.new(0, 4, 0.5, -10)
+                        icon.Parent = wmFrame
+                        wmLabel.Position = UDim2.new(0, 28, 0, 0)
+                        wmLabel.Size = UDim2.new(1, -32, 1, 0)
+                    end
+                    icon.Image = newOptions.Icon
+                end
+            end
+            -- Update other options
+            if newOptions.TextColor then wmLabel.TextColor3 = newOptions.TextColor end
+            if newOptions.TextSize then wmLabel.TextSize = newOptions.TextSize end
+            if newOptions.Font then wmLabel.Font = newOptions.Font end
+            if newOptions.BackgroundColor then wmFrame.BackgroundColor3 = newOptions.BackgroundColor end
+            if newOptions.BackgroundTransparency then wmFrame.BackgroundTransparency = newOptions.BackgroundTransparency end
+            if newOptions.Position then wmFrame.Position = newOptions.Position end
+        end
+        updateSize()
+    end
+
+    self._watermark = wmObj   -- store the wrapper, not the ScreenGui
+    return wmObj
+end
+
+-- ── Window:CreateKeySystem(config) – with copy button ───────────────────────
+function RGui:CreateKeySystem(config)
+    local theme = self._theme
+    local services = config.Services or {}
+    local description = config.Description or "Enter your key to continue."
+    local title = config.Title or "Key System"
+    local onSuccess = config.Callback or function() end
+
+    local serviceNames = {}
+    for name, data in pairs(services) do
+        table.insert(serviceNames, name)
+    end
+    if #serviceNames == 0 then
+        serviceNames = {"No service available"}
+        services = {["No service available"] = {Validate = function() return true end}}
+    end
+
+    local keyScreen = Instance.new("ScreenGui")
+    keyScreen.Name = "RGui_KeySystem"
+    keyScreen.ResetOnSpawn = false
+    keyScreen.Parent = CoreGui
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.BackgroundColor3 = theme.WindowBg
+    mainFrame.Position = UDim2.new(0.5, -200, 0.4, 0)
+    mainFrame.Size = UDim2.new(0, 400, 0, 180)
+    mainFrame.ClipsDescendants = false
+    mainFrame.Parent = keyScreen
+    applyCorner(mainFrame, 4)
+    applyBorder(mainFrame, theme.Border)
+
+    -- Titlebar
+    local titleBar = Instance.new("Frame")
+    titleBar.BackgroundColor3 = theme.TitleBg
+    titleBar.Size = UDim2.new(1, 0, 0, 24)
+    titleBar.Parent = mainFrame
+    applyCorner(titleBar, 4)
+    local titleLbl = Instance.new("TextLabel")
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.Size = UDim2.new(1, -24, 1, 0)
+    titleLbl.Font = Enum.Font.RobotoMono
+    titleLbl.Text = " " .. title
+    titleLbl.TextColor3 = theme.Text
+    titleLbl.TextSize = 13
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.Parent = titleBar
+
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.BackgroundTransparency = 1
+    closeBtn.Position = UDim2.new(1, -20, 0, 0)
+    closeBtn.Size = UDim2.new(0, 20, 1, 0)
+    closeBtn.Font = Enum.Font.RobotoMono
+    closeBtn.Text = "×"
+    closeBtn.TextColor3 = theme.SubText
+    closeBtn.TextSize = 14
+    closeBtn.Parent = titleBar
+    closeBtn.MouseButton1Click:Connect(function() keyScreen:Destroy() end)
+
+    makeDraggable(mainFrame, titleBar)
+
+    -- Left column (script title, input, service, submit)
+    local leftPanel = Instance.new("Frame")
+    leftPanel.BackgroundTransparency = 1
+    leftPanel.Position = UDim2.new(0, 8, 0, 30)
+    leftPanel.Size = UDim2.new(0, 180, 1, -38)
+    leftPanel.ClipsDescendants = false
+    leftPanel.Parent = mainFrame
+
+    local scriptTitle = Instance.new("TextLabel")
+    scriptTitle.BackgroundTransparency = 1
+    scriptTitle.Size = UDim2.new(1, 0, 0, 18)
+    scriptTitle.Font = Enum.Font.RobotoMono
+    scriptTitle.Text = config.ScriptTitle or "My Script"
+    scriptTitle.TextColor3 = theme.Accent
+    scriptTitle.TextSize = 13
+    scriptTitle.TextXAlignment = Enum.TextXAlignment.Left
+    scriptTitle.Parent = leftPanel
+
+    -- Key input + copy button container
+    local inputRow = Instance.new("Frame")
+    inputRow.BackgroundTransparency = 1
+    inputRow.Position = UDim2.new(0, 0, 0, 26)
+    inputRow.Size = UDim2.new(1, 0, 0, 24)
+    inputRow.Parent = leftPanel
+
+    local keyInput = Instance.new("TextBox")
+    keyInput.BackgroundColor3 = theme.FrameBg
+    keyInput.Size = UDim2.new(1, -28, 1, 0)  -- leave room for copy button
+    keyInput.Font = Enum.Font.RobotoMono
+    keyInput.PlaceholderText = "Enter key..."
+    keyInput.PlaceholderColor3 = theme.SubText
+    keyInput.Text = ""
+    keyInput.TextColor3 = theme.Text
+    keyInput.TextSize = 13
+    keyInput.Parent = inputRow
+    applyCorner(keyInput, 2)
+    applyBorder(keyInput, theme.Border)
+
+    -- Copy button (visible if current service has CopyLink or CopyKey)
+    local copyBtn = Instance.new("TextButton")
+    copyBtn.BackgroundColor3 = theme.FrameBg
+    copyBtn.Size = UDim2.new(0, 24, 1, 0)
+    copyBtn.Position = UDim2.new(1, -24, 0, 0)
+    copyBtn.Font = Enum.Font.RobotoMono
+    copyBtn.Text = "📋"
+    copyBtn.TextColor3 = theme.Text
+    copyBtn.TextSize = 14
+    copyBtn.Visible = false
+    copyBtn.Parent = inputRow
+    applyCorner(copyBtn, 2)
+    applyBorder(copyBtn, theme.Border)
+
+    copyBtn.MouseButton1Click:Connect(function()
+        local serviceData = services[selectedService]
+        local toCopy = serviceData.CopyLink or serviceData.CopyKey
+        if toCopy then
+            pcall(function() setclipboard(toCopy) end)
+            -- Visual feedback
+            copyBtn.BackgroundColor3 = theme.Accent
+            task.delay(0.3, function()
+                copyBtn.BackgroundColor3 = theme.FrameBg
+            end)
+        end
+    end)
+
+    -- Service dropdown (same as before)
+    local serviceBtn = Instance.new("TextButton")
+    serviceBtn.BackgroundColor3 = theme.FrameBg
+    serviceBtn.Position = UDim2.new(0, 0, 0, 60)
+    serviceBtn.Size = UDim2.new(1, 0, 0, 24)
+    serviceBtn.Font = Enum.Font.RobotoMono
+    serviceBtn.Text = "  " .. serviceNames[1]
+    serviceBtn.TextColor3 = theme.Text
+    serviceBtn.TextSize = 13
+    serviceBtn.TextXAlignment = Enum.TextXAlignment.Left
+    serviceBtn.Parent = leftPanel
+    applyCorner(serviceBtn, 2)
+    applyBorder(serviceBtn, theme.Border)
+
+    local serviceList = Instance.new("Frame")
+    serviceList.BackgroundColor3 = theme.TabNormal
+    serviceList.Size = UDim2.new(0, 180, 0, 0)
+    serviceList.Visible = false
+    serviceList.ZIndex = 10
+    serviceList.Parent = mainFrame
+    applyBorder(serviceList, theme.Border)
+
+    local serviceLayout = Instance.new("UIListLayout")
+    serviceLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    serviceLayout.Parent = serviceList
+
+    local selectedService = serviceNames[1]
+    local serviceButtons = {}
+    for i, srv in ipairs(serviceNames) do
+        local btn = Instance.new("TextButton")
+        btn.BackgroundTransparency = 1
+        btn.Size = UDim2.new(1, 0, 0, 22)
+        btn.Font = Enum.Font.RobotoMono
+        btn.Text = " " .. srv
+        btn.TextColor3 = theme.TabNormalText
+        btn.TextSize = 12
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.LayoutOrder = i
+        btn.ZIndex = 10
+        btn.Parent = serviceList
+
+        btn.MouseEnter:Connect(function() btn.TextColor3 = theme.Accent end)
+        btn.MouseLeave:Connect(function() btn.TextColor3 = theme.TabNormalText end)
+        btn.MouseButton1Click:Connect(function()
+            selectedService = srv
+            serviceBtn.Text = "  " .. srv
+            serviceList.Visible = false
+            TweenService:Create(serviceList, TWEEN_FAST, {Size = UDim2.new(0, 180, 0, 0)}):Play()
+            -- Show/hide copy button based on service
+            local data = services[srv]
+            copyBtn.Visible = data and (data.CopyLink or data.CopyKey) ~= nil
+            -- Adjust input size
+            keyInput.Size = copyBtn.Visible and UDim2.new(1, -28, 1, 0) or UDim2.new(1, 0, 1, 0)
+        end)
+        serviceButtons[srv] = btn
+    end
+
+    local isServiceOpen = false
+    serviceBtn.MouseButton1Click:Connect(function()
+        isServiceOpen = not isServiceOpen
+        if isServiceOpen then
+            local absPos = serviceBtn.AbsolutePosition
+            local absSize = serviceBtn.AbsoluteSize
+            serviceList.Position = UDim2.new(0, absPos.X - mainFrame.AbsolutePosition.X,
+                                             0, absPos.Y + absSize.Y - mainFrame.AbsolutePosition.Y)
+            serviceList.Visible = true
+            local listHeight = #serviceNames * 22
+            TweenService:Create(serviceList, TWEEN_FAST, {Size = UDim2.new(0, 180, 0, listHeight)}):Play()
+        else
+            TweenService:Create(serviceList, TWEEN_FAST, {Size = UDim2.new(0, 180, 0, 0)}):Play()
+            task.delay(0.1, function() serviceList.Visible = false end)
+        end
+    end)
+
+    -- Submit button
+    local submitBtn = Instance.new("TextButton")
+    submitBtn.BackgroundColor3 = theme.FrameBg
+    submitBtn.Position = UDim2.new(0, 0, 1, -28)
+    submitBtn.Size = UDim2.new(1, 0, 0, 24)
+    submitBtn.Font = Enum.Font.RobotoMono
+    submitBtn.Text = "Check Key"
+    submitBtn.TextColor3 = theme.Text
+    submitBtn.TextSize = 13
+    submitBtn.Parent = leftPanel
+    applyCorner(submitBtn, 2)
+    applyBorder(submitBtn, theme.Border)
+
+    submitBtn.MouseButton1Click:Connect(function()
+        local service = services[selectedService]
+        if service and service.Validate then
+            local key = keyInput.Text
+            if service.Validate(key) then
+                onSuccess(selectedService, key)
+                keyScreen:Destroy()
+            else
+                local origColor = keyInput.BackgroundColor3
+                keyInput.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+                task.delay(0.3, function()
+                    keyInput.BackgroundColor3 = origColor
+                end)
+            end
+        end
+    end)
+
+    -- Right column (description)
+    local rightPanel = Instance.new("Frame")
+    rightPanel.BackgroundColor3 = theme.FrameBg
+    rightPanel.Position = UDim2.new(0, 196, 0, 30)
+    rightPanel.Size = UDim2.new(0, 196, 1, -38)
+    rightPanel.Parent = mainFrame
+    applyCorner(rightPanel, 2)
+    applyBorder(rightPanel, theme.Border)
+
+    local descLabel = Instance.new("TextLabel")
+    descLabel.BackgroundTransparency = 1
+    descLabel.Position = UDim2.new(0, 6, 0, 6)
+    descLabel.Size = UDim2.new(1, -12, 1, -12)
+    descLabel.Font = Enum.Font.RobotoMono
+    descLabel.Text = description
+    descLabel.TextColor3 = theme.SubText
+    descLabel.TextSize = 12
+    descLabel.TextWrapped = true
+    descLabel.Parent = rightPanel
+
+    -- Initial copy button visibility
+    local initialData = services[selectedService]
+    if initialData and (initialData.CopyLink or initialData.CopyKey) then
+        copyBtn.Visible = true
+        keyInput.Size = UDim2.new(1, -28, 1, 0)
+    end
+
+    local keySys = {}
+    function keySys:Destroy()
+        keyScreen:Destroy()
+    end
+    return keySys
+end
+
+-- ── Tab:AddGraph(title, maxPoints, options?) ─────────────────────────────────
+function TabComponent:AddGraph(title, maxPoints, options)
+    local theme = getTheme(self)
+    options = options or {}
+    -- backward compatibility: third arg could be just a Color3
+    if type(options) == "userdata" and options:IsA("Color3") then
+        options = { LineColor = options }
+    end
+
+    local lineColor    = options.LineColor   or theme.GraphLine
+    local yMin         = options.YMin          -- nil = auto‑scale
+    local yMax         = options.YMax
+    local smoothAlpha  = options.SmoothAlpha  or 0.2   -- 0 = raw, 1 = instant
+    local upsample     = options.Upsample     or 2      -- extra interpolated points between raw samples
+
+    local data = {}              -- ring buffer
+    local rawCount = 0
+    local smoothedValue = nil    -- last smoothed value (for EMA)
+
+    local container = Instance.new("Frame")
+    container.BackgroundTransparency = 1
+    container.Size = UDim2.new(1, 0, 0, 108)    -- 80px graph + 18px title + 10px padding
+    container.LayoutOrder = self:_nextOrder()
+    container.Parent = self._page
+
+    -- Title
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Size = UDim2.new(1, 0, 0, 18)
+    titleLabel.Font = Enum.Font.RobotoMono
+    titleLabel.Text = title
+    titleLabel.TextColor3 = theme.Text
+    titleLabel.TextSize = 12
+    titleLabel.Parent = container
+
+    -- Graph area
+    local graphFrame = Instance.new("Frame")
+    graphFrame.BackgroundColor3 = theme.GraphBg
+    graphFrame.BorderSizePixel = 0
+    graphFrame.Position = UDim2.new(0, 0, 0, 20)
+    graphFrame.Size = UDim2.new(1, 0, 0, 80)
+    graphFrame.ClipsDescendants = true
+    graphFrame.Parent = container
+    applyCorner(graphFrame, 2)
+    applyBorder(graphFrame, theme.Border)
+
+    -- Holder for line segments
+    local linesHolder = Instance.new("Frame")
+    linesHolder.BackgroundTransparency = 1
+    linesHolder.Size = UDim2.new(1, 0, 1, 0)
+    linesHolder.Parent = graphFrame
+
+    local function redraw()
+        local width  = graphFrame.AbsoluteSize.X
+        local height = graphFrame.AbsoluteSize.Y
+        if width <= 0 or height <= 0 then return end
+
+        linesHolder:ClearAllChildren()
+        if rawCount == 0 then return end
+
+        -- Generate fully interpolated point list (up to rawCount + upsampled extras)
+        local points = {}
+        for i = 1, rawCount do
+            points[#points + 1] = data[i]
+            if i < rawCount and upsample > 1 then
+                for j = 1, upsample - 1 do
+                    local t = j / upsample
+                    points[#points + 1] = data[i] + (data[i+1] - data[i]) * t
+                end
+            end
+        end
+
+        -- Determine Y range
+        local minY, maxY
+        if yMin ~= nil and yMax ~= nil then
+            minY, maxY = yMin, yMax
+        else
+            minY = math.min(table.unpack(points))
+            maxY = math.max(table.unpack(points))
+            if minY == maxY then
+                maxY = minY + 1
+            end
+        end
+
+        local range = maxY - minY
+        local prevX, prevY = nil, nil
+        for i, val in ipairs(points) do
+            local x = (i - 1) / (#points - 1) * width
+            local y = height - ((val - minY) / range) * height
+            if prevX then
+                local dx = x - prevX
+                local dy = y - prevY
+                local len = math.sqrt(dx*dx + dy*dy)
+                if len > 0 then
+                    local line = Instance.new("Frame")
+                    line.BackgroundColor3 = lineColor
+                    line.BorderSizePixel = 0
+                    line.Size = UDim2.new(0, len, 0, 1)   -- 1px thin
+                    line.Position = UDim2.new(0, prevX, 0, prevY)
+                    line.Rotation = math.deg(math.atan2(dy, dx))
+                    line.Parent = linesHolder
+                end
+            end
+            prevX, prevY = x, y
+        end
+    end
+
+    -- Public object
+    local graphObj = {}
+
+    function graphObj:Push(rawValue)
+        -- Exponential smoothing
+        local value
+        if smoothedValue == nil then
+            smoothedValue = rawValue
+            value = rawValue
+        else
+            smoothedValue = smoothedValue + (rawValue - smoothedValue) * smoothAlpha
+            value = smoothedValue
+        end
+
+        -- Ring buffer
+        if rawCount < maxPoints then
+            rawCount += 1
+            data[rawCount] = value
+        else
+            table.remove(data, 1)
+            data[maxPoints] = value
+        end
+
+        redraw()
+    end
+
+    -- Resize handler
+    graphFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(redraw)
+
+    return graphObj
+end
+                                         
+-- ── Window:Destroy() ──────────────────────────────────────────────────────────
+function RGui:Destroy()
+    if self._watermark then self._watermark:Destroy() end
+    self._screen:Destroy()
+end
+
+return RGui
