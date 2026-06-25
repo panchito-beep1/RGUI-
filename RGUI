@@ -1191,12 +1191,11 @@ function TabComponent:AddTextBox(text, placeholder, default, callback)
     return box
 end
 
--- ── NEW: Window:CreateWatermark(text, options) ───────────────────────────────
+-- ── Window:CreateWatermark(text, options) ───────────────────────────────────
 function RGui:CreateWatermark(text, options)
     local theme = self._theme
     options = options or {}
 
-    -- Create a separate ScreenGui for the watermark (always on top)
     local wmGui = Instance.new("ScreenGui")
     wmGui.Name = "RGui_Watermark"
     wmGui.ResetOnSpawn = false
@@ -1206,15 +1205,23 @@ function RGui:CreateWatermark(text, options)
     wmFrame.BackgroundColor3 = options.BackgroundColor or theme.TitleBg
     wmFrame.BackgroundTransparency = options.BackgroundTransparency or 0.5
     wmFrame.Position = options.Position or UDim2.new(0, 10, 0, 10)
-    wmFrame.Size = UDim2.new(0, 0, 0, 0) -- auto-size later
+    wmFrame.Size = UDim2.new(0, 0, 0, 0)    -- auto‑size later
     wmFrame.Parent = wmGui
     applyCorner(wmFrame, 4)
     applyBorder(wmFrame, theme.Border)
 
+    local icon
+    if options.Icon then
+        icon = Instance.new("ImageLabel")
+        icon.BackgroundTransparency = 1
+        icon.Size = UDim2.new(0, 20, 0, 20)
+        icon.Position = UDim2.new(0, 4, 0.5, -10)
+        icon.Image = options.Icon
+        icon.Parent = wmFrame
+    end
+
     local wmLabel = Instance.new("TextLabel")
     wmLabel.BackgroundTransparency = 1
-    wmLabel.Position = UDim2.new(0, 8, 0, 0)
-    wmLabel.Size = UDim2.new(1, -16, 1, 0)
     wmLabel.Font = options.Font or Enum.Font.RobotoMono
     wmLabel.Text = text
     wmLabel.TextColor3 = options.TextColor or theme.Text
@@ -1223,19 +1230,75 @@ function RGui:CreateWatermark(text, options)
     wmLabel.RichText = true
     wmLabel.Parent = wmFrame
 
-    -- Auto-size the frame to the text
-    local function updateSize()
-        local textBounds = TextService:GetTextSize(text, wmLabel.TextSize, wmLabel.Font, Vector2.new(math.huge, math.huge))
-        wmFrame.Size = UDim2.new(0, textBounds.X + 16, 0, textBounds.Y + 8)
+    if icon then
+        wmLabel.Position = UDim2.new(0, 28, 0, 0)
+        wmLabel.Size = UDim2.new(1, -32, 1, 0)
+    else
+        wmLabel.Position = UDim2.new(0, 8, 0, 0)
         wmLabel.Size = UDim2.new(1, -16, 1, 0)
+    end
+
+    local function updateSize()
+        local textBounds = TextService:GetTextSize(
+            wmLabel.Text, wmLabel.TextSize, wmLabel.Font,
+            Vector2.new(math.huge, math.huge)
+        )
+        wmFrame.Size = UDim2.new(
+            0, textBounds.X + 16 + (icon and 24 or 0),
+            0, math.max(textBounds.Y + 8, 28)
+        )
     end
     updateSize()
 
-    -- Make draggable
     makeDraggable(wmFrame, wmFrame)
 
-    self._watermark = wmGui
-    return wmGui
+    -- Build custom object with methods
+    local wmObj = {}
+
+    function wmObj:Destroy()
+        wmGui:Destroy()
+    end
+
+    function wmObj:Update(newText, newOptions)
+        if newText ~= nil then
+            wmLabel.Text = newText
+        end
+        if newOptions then
+            -- Update icon
+            if newOptions.Icon ~= nil then
+                if newOptions.Icon == "" or newOptions.Icon == false then
+                    if icon then
+                        icon:Destroy()
+                        icon = nil
+                        wmLabel.Position = UDim2.new(0, 8, 0, 0)
+                        wmLabel.Size = UDim2.new(1, -16, 1, 0)
+                    end
+                else
+                    if not icon then
+                        icon = Instance.new("ImageLabel")
+                        icon.BackgroundTransparency = 1
+                        icon.Size = UDim2.new(0, 20, 0, 20)
+                        icon.Position = UDim2.new(0, 4, 0.5, -10)
+                        icon.Parent = wmFrame
+                        wmLabel.Position = UDim2.new(0, 28, 0, 0)
+                        wmLabel.Size = UDim2.new(1, -32, 1, 0)
+                    end
+                    icon.Image = newOptions.Icon
+                end
+            end
+            -- Update other options
+            if newOptions.TextColor then wmLabel.TextColor3 = newOptions.TextColor end
+            if newOptions.TextSize then wmLabel.TextSize = newOptions.TextSize end
+            if newOptions.Font then wmLabel.Font = newOptions.Font end
+            if newOptions.BackgroundColor then wmFrame.BackgroundColor3 = newOptions.BackgroundColor end
+            if newOptions.BackgroundTransparency then wmFrame.BackgroundTransparency = newOptions.BackgroundTransparency end
+            if newOptions.Position then wmFrame.Position = newOptions.Position end
+        end
+        updateSize()
+    end
+
+    self._watermark = wmObj   -- store the wrapper, not the ScreenGui
+    return wmObj
 end
 
 -- ── Window:CreateKeySystem(config) – with copy button ───────────────────────
