@@ -1563,6 +1563,112 @@ function RGui:CreateKeySystem(config)
     end
     return keySys
 end
+
+-- ── Tab:AddGraph(title, maxPoints, color?) ───────────────────────────────────
+function TabComponent:AddGraph(title, maxPoints, lineColor)
+    local theme = getTheme(self)
+    local graphColor = lineColor or theme.GraphLine
+    local data = table.create(maxPoints, 0)   -- all zeroes initially
+    local pointIndex = 0
+    local graphWidth = 300
+    local graphHeight = 80
+
+    local container = Instance.new("Frame")
+    container.BackgroundTransparency = 1
+    container.Size = UDim2.new(1, 0, 0, graphHeight + 28)   -- title + graph
+    container.LayoutOrder = self:_nextOrder()
+    container.Parent = self._page
+
+    -- Title label
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Size = UDim2.new(1, 0, 0, 18)
+    titleLabel.Font = Enum.Font.RobotoMono
+    titleLabel.Text = title
+    titleLabel.TextColor3 = theme.Text
+    titleLabel.TextSize = 12
+    titleLabel.Parent = container
+
+    -- Graph background
+    local graphFrame = Instance.new("Frame")
+    graphFrame.BackgroundColor3 = theme.GraphBg
+    graphFrame.BorderSizePixel = 0
+    graphFrame.Position = UDim2.new(0, 0, 0, 20)
+    graphFrame.Size = UDim2.new(1, 0, 0, graphHeight)
+    graphFrame.ClipsDescendants = true
+    graphFrame.Parent = container
+    applyCorner(graphFrame, 2)
+    applyBorder(graphFrame, theme.Border)
+
+    -- Container for line segments (we'll rebuild them each update)
+    local linesHolder = Instance.new("Frame")
+    linesHolder.BackgroundTransparency = 1
+    linesHolder.Size = UDim2.new(1, 0, 1, 0)
+    linesHolder.Parent = graphFrame
+
+    local function redraw()
+        -- Clear old lines
+        linesHolder:ClearAllChildren()
+
+        local points = {}
+        -- Collect non-zero points for drawing
+        for i = 1, maxPoints do
+            local val = data[i]
+            if val > 0 then   -- skip initial zero padding
+                table.insert(points, val)
+            end
+        end
+        if #points < 2 then return end
+
+        -- Normalisation: map values to [0, graphHeight]
+        local maxVal = math.max(table.unpack(points))
+        local minVal = math.min(table.unpack(points))
+        local range = maxVal - minVal
+        if range == 0 then range = 1 end
+
+        local prevX, prevY = nil, nil
+        for i, val in ipairs(points) do
+            local x = (i - 1) / (maxPoints - 1) * graphWidth
+            local y = graphHeight - ((val - minVal) / range) * graphHeight
+            if prevX then
+                -- Draw line segment
+                local dx = x - prevX
+                local dy = y - prevY
+                local length = math.sqrt(dx*dx + dy*dy)
+                if length > 0 then
+                    local line = Instance.new("Frame")
+                    line.BackgroundColor3 = graphColor
+                    line.BorderSizePixel = 0
+                    line.Size = UDim2.new(0, length, 0, 2)
+                    line.Position = UDim2.new(0, prevX, 0, prevY)
+                    line.Rotation = math.deg(math.atan2(dy, dx))
+                    line.Parent = linesHolder
+                end
+            end
+            prevX, prevY = x, y
+        end
+    end
+
+    -- Public method
+    local graphObj = {}
+
+    function graphObj:Push(value)
+        pointIndex = pointIndex + 1
+        if pointIndex > maxPoints then
+            table.remove(data, 1)
+            table.insert(data, value)
+        else
+            data[pointIndex] = value
+        end
+        redraw()
+    end
+
+    -- initial draw (will show nothing until data arrives)
+    redraw()
+
+    return graphObj
+end
+
 -- ── Window:Destroy() ──────────────────────────────────────────────────────────
 function RGui:Destroy()
     if self._watermark then self._watermark:Destroy() end
