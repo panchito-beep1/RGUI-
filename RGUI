@@ -1238,7 +1238,7 @@ function RGui:CreateWatermark(text, options)
     return wmGui
 end
 
--- ── NEW: Window:CreateKeySystem(config) ──────────────────────────────────────
+-- ── Window:CreateKeySystem(config) – with copy button ───────────────────────
 function RGui:CreateKeySystem(config)
     local theme = self._theme
     local services = config.Services or {}
@@ -1247,7 +1247,9 @@ function RGui:CreateKeySystem(config)
     local onSuccess = config.Callback or function() end
 
     local serviceNames = {}
-    for name, _ in pairs(services) do table.insert(serviceNames, name) end
+    for name, data in pairs(services) do
+        table.insert(serviceNames, name)
+    end
     if #serviceNames == 0 then
         serviceNames = {"No service available"}
         services = {["No service available"] = {Validate = function() return true end}}
@@ -1258,17 +1260,16 @@ function RGui:CreateKeySystem(config)
     keyScreen.ResetOnSpawn = false
     keyScreen.Parent = PlayerGui
 
-    -- Main frame (wider to fit two columns)
     local mainFrame = Instance.new("Frame")
     mainFrame.BackgroundColor3 = theme.WindowBg
     mainFrame.Position = UDim2.new(0.5, -200, 0.4, 0)
     mainFrame.Size = UDim2.new(0, 400, 0, 180)
-    mainFrame.ClipsDescendants = false   -- allow service list to appear outside
+    mainFrame.ClipsDescendants = false
     mainFrame.Parent = keyScreen
     applyCorner(mainFrame, 4)
     applyBorder(mainFrame, theme.Border)
 
-    -- Titlebar with close button
+    -- Titlebar
     local titleBar = Instance.new("Frame")
     titleBar.BackgroundColor3 = theme.TitleBg
     titleBar.Size = UDim2.new(1, 0, 0, 24)
@@ -1297,15 +1298,14 @@ function RGui:CreateKeySystem(config)
 
     makeDraggable(mainFrame, titleBar)
 
-    -- ── Left column (title, input, service, submit) ──
+    -- Left column (script title, input, service, submit)
     local leftPanel = Instance.new("Frame")
     leftPanel.BackgroundTransparency = 1
     leftPanel.Position = UDim2.new(0, 8, 0, 30)
-    leftPanel.Size = UDim2.new(0, 180, 1, -38)    -- height less titlebar + margins
+    leftPanel.Size = UDim2.new(0, 180, 1, -38)
     leftPanel.ClipsDescendants = false
     leftPanel.Parent = mainFrame
 
-    -- Script title label
     local scriptTitle = Instance.new("TextLabel")
     scriptTitle.BackgroundTransparency = 1
     scriptTitle.Size = UDim2.new(1, 0, 0, 18)
@@ -1316,22 +1316,54 @@ function RGui:CreateKeySystem(config)
     scriptTitle.TextXAlignment = Enum.TextXAlignment.Left
     scriptTitle.Parent = leftPanel
 
-    -- Key input
+    -- Key input + copy button container
+    local inputRow = Instance.new("Frame")
+    inputRow.BackgroundTransparency = 1
+    inputRow.Position = UDim2.new(0, 0, 0, 26)
+    inputRow.Size = UDim2.new(1, 0, 0, 24)
+    inputRow.Parent = leftPanel
+
     local keyInput = Instance.new("TextBox")
     keyInput.BackgroundColor3 = theme.FrameBg
-    keyInput.Position = UDim2.new(0, 0, 0, 26)
-    keyInput.Size = UDim2.new(1, 0, 0, 24)
+    keyInput.Size = UDim2.new(1, -28, 1, 0)  -- leave room for copy button
     keyInput.Font = Enum.Font.RobotoMono
     keyInput.PlaceholderText = "Enter key..."
     keyInput.PlaceholderColor3 = theme.SubText
     keyInput.Text = ""
     keyInput.TextColor3 = theme.Text
     keyInput.TextSize = 13
-    keyInput.Parent = leftPanel
+    keyInput.Parent = inputRow
     applyCorner(keyInput, 2)
     applyBorder(keyInput, theme.Border)
 
-    -- Service dropdown button
+    -- Copy button (visible if current service has CopyLink or CopyKey)
+    local copyBtn = Instance.new("TextButton")
+    copyBtn.BackgroundColor3 = theme.FrameBg
+    copyBtn.Size = UDim2.new(0, 24, 1, 0)
+    copyBtn.Position = UDim2.new(1, -24, 0, 0)
+    copyBtn.Font = Enum.Font.RobotoMono
+    copyBtn.Text = "📋"
+    copyBtn.TextColor3 = theme.Text
+    copyBtn.TextSize = 14
+    copyBtn.Visible = false
+    copyBtn.Parent = inputRow
+    applyCorner(copyBtn, 2)
+    applyBorder(copyBtn, theme.Border)
+
+    copyBtn.MouseButton1Click:Connect(function()
+        local serviceData = services[selectedService]
+        local toCopy = serviceData.CopyLink or serviceData.CopyKey
+        if toCopy then
+            pcall(function() setclipboard(toCopy) end)
+            -- Visual feedback
+            copyBtn.BackgroundColor3 = theme.Accent
+            task.delay(0.3, function()
+                copyBtn.BackgroundColor3 = theme.FrameBg
+            end)
+        end
+    end)
+
+    -- Service dropdown (same as before)
     local serviceBtn = Instance.new("TextButton")
     serviceBtn.BackgroundColor3 = theme.FrameBg
     serviceBtn.Position = UDim2.new(0, 0, 0, 60)
@@ -1345,7 +1377,6 @@ function RGui:CreateKeySystem(config)
     applyCorner(serviceBtn, 2)
     applyBorder(serviceBtn, theme.Border)
 
-    -- Service list (placed directly in mainFrame so it can overlay)
     local serviceList = Instance.new("Frame")
     serviceList.BackgroundColor3 = theme.TabNormal
     serviceList.Size = UDim2.new(0, 180, 0, 0)
@@ -1380,6 +1411,11 @@ function RGui:CreateKeySystem(config)
             serviceBtn.Text = "  " .. srv
             serviceList.Visible = false
             TweenService:Create(serviceList, TWEEN_FAST, {Size = UDim2.new(0, 180, 0, 0)}):Play()
+            -- Show/hide copy button based on service
+            local data = services[srv]
+            copyBtn.Visible = data and (data.CopyLink or data.CopyKey) ~= nil
+            -- Adjust input size
+            keyInput.Size = copyBtn.Visible and UDim2.new(1, -28, 1, 0) or UDim2.new(1, 0, 1, 0)
         end)
         serviceButtons[srv] = btn
     end
@@ -1388,7 +1424,6 @@ function RGui:CreateKeySystem(config)
     serviceBtn.MouseButton1Click:Connect(function()
         isServiceOpen = not isServiceOpen
         if isServiceOpen then
-            -- Position list right below the service button
             local absPos = serviceBtn.AbsolutePosition
             local absSize = serviceBtn.AbsoluteSize
             serviceList.Position = UDim2.new(0, absPos.X - mainFrame.AbsolutePosition.X,
@@ -1402,7 +1437,7 @@ function RGui:CreateKeySystem(config)
         end
     end)
 
-    -- Submit button (at bottom of left column)
+    -- Submit button
     local submitBtn = Instance.new("TextButton")
     submitBtn.BackgroundColor3 = theme.FrameBg
     submitBtn.Position = UDim2.new(0, 0, 1, -28)
@@ -1432,7 +1467,7 @@ function RGui:CreateKeySystem(config)
         end
     end)
 
-    -- ── Right column (description) ──
+    -- Right column (description)
     local rightPanel = Instance.new("Frame")
     rightPanel.BackgroundColor3 = theme.FrameBg
     rightPanel.Position = UDim2.new(0, 196, 0, 30)
@@ -1452,14 +1487,19 @@ function RGui:CreateKeySystem(config)
     descLabel.TextWrapped = true
     descLabel.Parent = rightPanel
 
-    -- Return a destructible object
+    -- Initial copy button visibility
+    local initialData = services[selectedService]
+    if initialData and (initialData.CopyLink or initialData.CopyKey) then
+        copyBtn.Visible = true
+        keyInput.Size = UDim2.new(1, -28, 1, 0)
+    end
+
     local keySys = {}
     function keySys:Destroy()
         keyScreen:Destroy()
     end
     return keySys
 end
-
 -- ── Window:Destroy() ──────────────────────────────────────────────────────────
 function RGui:Destroy()
     if self._watermark then self._watermark:Destroy() end
