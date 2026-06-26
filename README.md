@@ -311,3 +311,8 @@ end)
 ```
 
 <img width="473" height="35" alt="image" src="https://github.com/user-attachments/assets/c79fa482-4802-4900-aa73-d63d67f9d1f2" />
+
+
+# Me
+
+<a href="https://rscripts.net/user/GoatedCitizen" target="_blank"><img alt="GoatedCitizen on Rscripts" loading="lazy" width="360" height="132" src="https://rscripts.net/api/embed/user/GoatedCitizen?theme=dark" /></a>
