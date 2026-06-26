@@ -1321,7 +1321,7 @@ function TabComponent:AddTextBox(text, placeholder, default, callback, optOption
     return box
 end
 
--- ── Tab:AddGraph(title, maxPoints, options?) – Smooth Spline ─────────────────
+-- ── Tab:AddGraph(title, maxPoints, options?) – Optimized Smooth Spline ──────
 function TabComponent:AddGraph(title, maxPoints, options)
     local theme = getTheme(self)
     options = options or {}
@@ -1329,11 +1329,11 @@ function TabComponent:AddGraph(title, maxPoints, options)
         options = { LineColor = options }
     end
 
-    local lineColor    = options.LineColor   or theme.GraphLine
-    local yMin         = options.YMin
-    local yMax         = options.YMax
-    local smoothAlpha  = options.SmoothAlpha or 0.2
-    local segmentSteps = options.SegmentSteps or 20
+    local lineColor     = options.LineColor   or theme.GraphLine
+    local yMin          = options.YMin
+    local yMax          = options.YMax
+    local smoothAlpha   = options.SmoothAlpha or 0.2
+    local maxTotalLines = options.MaxLines or 300   -- 🔥 cap on total line frames
 
     local data = {}
     local rawCount = 0
@@ -1382,6 +1382,7 @@ function TabComponent:AddGraph(title, maxPoints, options)
             return
         end
 
+        -- Determine Y range
         local minY, maxY
         if yMin and yMax then
             minY, maxY = yMin, yMax
@@ -1392,23 +1393,31 @@ function TabComponent:AddGraph(title, maxPoints, options)
         end
         local range = maxY - minY
 
-        linesHolder:ClearAllChildren()
-
-        local pts = {}
+        -- Convert raw data to pixel points
+        local points = {}
         for i = 1, rawCount do
-            local x = (i-1)/(rawCount-1) * width
-            local y = height - ((data[i] - minY)/range) * height
-            pts[i] = Vector2.new(x, y)
+            local x = (i - 1) / (rawCount - 1) * width
+            local y = height - ((data[i] - minY) / range) * height
+            points[i] = Vector2.new(x, y)
         end
 
-        for i = 1, #pts - 1 do
-            local p0 = pts[math.max(1, i-1)]
-            local p1 = pts[i]
-            local p2 = pts[math.min(#pts, i+1)]
-            local p3 = pts[math.min(#pts, i+2)]
+        -- Determine total line segments needed: each interval between raw points
+        local intervals = rawCount - 1
+        -- Base steps per interval to get a smooth look but respect cap
+        local stepsPer = math.floor(maxTotalLines / intervals)
+        if stepsPer < 1 then stepsPer = 1 end
+
+        linesHolder:ClearAllChildren()
+
+        -- Draw spline‑smoothed line with limited sub‑segments
+        for i = 1, intervals do
+            local p0 = points[math.max(1, i-1)]
+            local p1 = points[i]
+            local p2 = points[math.min(#points, i+1)]
+            local p3 = points[math.min(#points, i+2)]
             local last = p1
-            for step = 1, segmentSteps do
-                local t = step / segmentSteps
+            for step = 1, stepsPer do
+                local t = step / stepsPer
                 local x = catmullRom(p0.X, p1.X, p2.X, p3.X, t)
                 local y = catmullRom(p0.Y, p1.Y, p2.Y, p3.Y, t)
                 local dx = x - last.X
@@ -1418,7 +1427,7 @@ function TabComponent:AddGraph(title, maxPoints, options)
                     local line = Instance.new("Frame")
                     line.BackgroundColor3 = lineColor
                     line.BorderSizePixel = 0
-                    line.Size = UDim2.new(0, len, 0, 1)
+                    line.Size = UDim2.new(0, len, 0, 1)   -- 1px thick
                     line.Position = UDim2.new(0, last.X, 0, last.Y)
                     line.Rotation = math.deg(math.atan2(dy, dx))
                     line.Parent = linesHolder
