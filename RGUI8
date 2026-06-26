@@ -19,6 +19,13 @@ print("███  ▀███ ▀██████▀  ▀██████�
               TextBox Input, Watermark, Key System
 ]]
 
+local function warnCustomColor(tab, componentName)
+    if tab._window then
+        tab._window:Notify("Theme Warning",
+            "Custom colour used on " .. componentName .. " – this may break theme consistency!",
+            4, { Color = Color3.fromRGB(255, 100, 100) })
+    end
+end
 
 local RGui = {}
 RGui.__index = RGui
@@ -57,8 +64,11 @@ RGui.DefaultTheme = {
     TabActiveText = Color3.fromRGB(255, 255, 255),
     TabOff        = Color3.fromRGB(31, 32, 33),
     TabOn         = Color3.fromRGB(56, 101, 165),
-    GraphBg       = Color3.fromRGB(21, 22, 23),   -- graph background
-    GraphLine     = Color3.fromRGB(56, 101, 165),  -- line colour (accent by default)
+    GraphBg       = Color3.fromRGB(21, 22, 23),  
+    GraphLine     = Color3.fromRGB(56, 101, 165), 
+    NotifyBg      = Color3.fromRGB(21, 22, 23),
+    NotifyTitle   = Color3.fromRGB(255, 255, 255),
+    NotifyMsg     = Color3.fromRGB(180, 180, 180,
 }
 
 local TWEEN_FAST = TweenInfo.new(0.1, Enum.EasingStyle.Quad)
@@ -1194,7 +1204,6 @@ function TabComponent:AddTextBox(text, placeholder, default, callback)
     return box
 end
 
--- ── Window:CreateWatermark(text, options) ───────────────────────────────────
 function RGui:CreateWatermark(text, options)
     local theme = self._theme
     options = options or {}
@@ -1205,12 +1214,12 @@ function RGui:CreateWatermark(text, options)
     wmGui.Parent = CoreGui
 
     local wmFrame = Instance.new("Frame")
-    wmFrame.BackgroundColor3 = options.BackgroundColor or theme.TitleBg
-    wmFrame.BackgroundTransparency = options.BackgroundTransparency or 0.5
+    wmFrame.BackgroundColor3 = options.BackgroundColor or theme.TitleBg      -- 🆕 uses TitleBg
+    wmFrame.BackgroundTransparency = options.BackgroundTransparency or 0.4
     wmFrame.Position = options.Position or UDim2.new(0, 10, 0, 10)
-    wmFrame.Size = UDim2.new(0, 0, 0, 0)    -- auto‑size later
+    wmFrame.Size = UDim2.new(0, 0, 0, 0)
     wmFrame.Parent = wmGui
-    applyCorner(wmFrame, 4)
+    applyCorner(wmFrame, 2)          -- 🆕 same corner radius as title bar
     applyBorder(wmFrame, theme.Border)
 
     local icon
@@ -1225,16 +1234,16 @@ function RGui:CreateWatermark(text, options)
 
     local wmLabel = Instance.new("TextLabel")
     wmLabel.BackgroundTransparency = 1
-    wmLabel.Font = options.Font or Enum.Font.RobotoMono
+    wmLabel.Font = Enum.Font.RobotoMono        -- 🆕 same font as title
     wmLabel.Text = text
     wmLabel.TextColor3 = options.TextColor or theme.Text
-    wmLabel.TextSize = options.TextSize or 14
+    wmLabel.TextSize = options.TextSize or 13  -- 🆕 same size as title
     wmLabel.TextXAlignment = Enum.TextXAlignment.Left
     wmLabel.RichText = true
     wmLabel.Parent = wmFrame
 
     if icon then
-        wmLabel.Position = UDim2.new(0, 28, 0, 0)
+        wmLabel.Position = UDim2.new(0, 28, 0, 0)   -- 4 + 20 + 4
         wmLabel.Size = UDim2.new(1, -32, 1, 0)
     else
         wmLabel.Position = UDim2.new(0, 8, 0, 0)
@@ -1242,65 +1251,41 @@ function RGui:CreateWatermark(text, options)
     end
 
     local function updateSize()
-        local textBounds = TextService:GetTextSize(
-            wmLabel.Text, wmLabel.TextSize, wmLabel.Font,
-            Vector2.new(math.huge, math.huge)
-        )
-        wmFrame.Size = UDim2.new(
-            0, textBounds.X + 16 + (icon and 24 or 0),
-            0, math.max(textBounds.Y + 8, 28)
-        )
+        local textBounds = TextService:GetTextSize(wmLabel.Text, wmLabel.TextSize, wmLabel.Font, Vector2.new(math.huge, math.huge))
+        wmFrame.Size = UDim2.new(0, textBounds.X + 16 + (icon and 24 or 0), 0, math.max(textBounds.Y + 8, 24))
     end
     updateSize()
 
     makeDraggable(wmFrame, wmFrame)
 
-    -- Build custom object with methods
     local wmObj = {}
-
     function wmObj:Destroy()
         wmGui:Destroy()
     end
-
     function wmObj:Update(newText, newOptions)
-        if newText ~= nil then
-            wmLabel.Text = newText
-        end
+        if newText ~= nil then wmLabel.Text = newText end
         if newOptions then
-            -- Update icon
             if newOptions.Icon ~= nil then
                 if newOptions.Icon == "" or newOptions.Icon == false then
-                    if icon then
-                        icon:Destroy()
-                        icon = nil
-                        wmLabel.Position = UDim2.new(0, 8, 0, 0)
-                        wmLabel.Size = UDim2.new(1, -16, 1, 0)
-                    end
+                    if icon then icon:Destroy(); icon = nil; wmLabel.Position = UDim2.new(0, 8, 0, 0); wmLabel.Size = UDim2.new(1, -16, 1, 0) end
                 else
                     if not icon then
-                        icon = Instance.new("ImageLabel")
-                        icon.BackgroundTransparency = 1
-                        icon.Size = UDim2.new(0, 20, 0, 20)
-                        icon.Position = UDim2.new(0, 4, 0.5, -10)
-                        icon.Parent = wmFrame
-                        wmLabel.Position = UDim2.new(0, 28, 0, 0)
-                        wmLabel.Size = UDim2.new(1, -32, 1, 0)
+                        icon = Instance.new("ImageLabel"); icon.BackgroundTransparency = 1; icon.Size = UDim2.new(0, 20, 0, 20); icon.Position = UDim2.new(0, 4, 0.5, -10); icon.Parent = wmFrame
+                        wmLabel.Position = UDim2.new(0, 28, 0, 0); wmLabel.Size = UDim2.new(1, -32, 1, 0)
                     end
                     icon.Image = newOptions.Icon
                 end
             end
-            -- Update other options
             if newOptions.TextColor then wmLabel.TextColor3 = newOptions.TextColor end
             if newOptions.TextSize then wmLabel.TextSize = newOptions.TextSize end
-            if newOptions.Font then wmLabel.Font = newOptions.Font end
             if newOptions.BackgroundColor then wmFrame.BackgroundColor3 = newOptions.BackgroundColor end
             if newOptions.BackgroundTransparency then wmFrame.BackgroundTransparency = newOptions.BackgroundTransparency end
             if newOptions.Position then wmFrame.Position = newOptions.Position end
+            if newOptions.Font then wmLabel.Font = newOptions.Font end
         end
         updateSize()
     end
-
-    self._watermark = wmObj   -- store the wrapper, not the ScreenGui
+    self._watermark = wmObj
     return wmObj
 end
 
@@ -1567,32 +1552,29 @@ function RGui:CreateKeySystem(config)
     return keySys
 end
 
--- ── Tab:AddGraph(title, maxPoints, options?) ─────────────────────────────────
 function TabComponent:AddGraph(title, maxPoints, options)
     local theme = getTheme(self)
     options = options or {}
-    -- backward compatibility: third arg could be just a Color3
     if type(options) == "userdata" and options:IsA("Color3") then
         options = { LineColor = options }
     end
 
     local lineColor    = options.LineColor   or theme.GraphLine
-    local yMin         = options.YMin          -- nil = auto‑scale
+    local yMin         = options.YMin
     local yMax         = options.YMax
-    local smoothAlpha  = options.SmoothAlpha  or 0.2   -- 0 = raw, 1 = instant
-    local upsample     = options.Upsample     or 2      -- extra interpolated points between raw samples
+    local smoothAlpha  = options.SmoothAlpha or 0.2
+    local segmentSteps = options.SegmentSteps or 20   -- sub‑steps per spline segment
 
-    local data = {}              -- ring buffer
+    local data = {}
     local rawCount = 0
-    local smoothedValue = nil    -- last smoothed value (for EMA)
+    local smoothedValue = nil
 
     local container = Instance.new("Frame")
     container.BackgroundTransparency = 1
-    container.Size = UDim2.new(1, 0, 0, 108)    -- 80px graph + 18px title + 10px padding
+    container.Size = UDim2.new(1, 0, 0, 108)
     container.LayoutOrder = self:_nextOrder()
     container.Parent = self._page
 
-    -- Title
     local titleLabel = Instance.new("TextLabel")
     titleLabel.BackgroundTransparency = 1
     titleLabel.Size = UDim2.new(1, 0, 0, 18)
@@ -1602,7 +1584,6 @@ function TabComponent:AddGraph(title, maxPoints, options)
     titleLabel.TextSize = 12
     titleLabel.Parent = container
 
-    -- Graph area
     local graphFrame = Instance.new("Frame")
     graphFrame.BackgroundColor3 = theme.GraphBg
     graphFrame.BorderSizePixel = 0
@@ -1613,72 +1594,74 @@ function TabComponent:AddGraph(title, maxPoints, options)
     applyCorner(graphFrame, 2)
     applyBorder(graphFrame, theme.Border)
 
-    -- Holder for line segments
     local linesHolder = Instance.new("Frame")
     linesHolder.BackgroundTransparency = 1
     linesHolder.Size = UDim2.new(1, 0, 1, 0)
     linesHolder.Parent = graphFrame
 
+    -- Catmull‑Rom interpolation
+    local function catmullRom(p0, p1, p2, p3, t)
+        local t2, t3 = t*t, t*t*t
+        return 0.5 * ((2*p1) + (-p0 + p2)*t + (2*p0 - 5*p1 + 4*p2 - p3)*t2 + (-p0 + 3*p1 - 3*p2 + p3)*t3)
+    end
+
     local function redraw()
-        local width  = graphFrame.AbsoluteSize.X
-        local height = graphFrame.AbsoluteSize.Y
-        if width <= 0 or height <= 0 then return end
-
-        linesHolder:ClearAllChildren()
-        if rawCount == 0 then return end
-
-        -- Generate fully interpolated point list (up to rawCount + upsampled extras)
-        local points = {}
-        for i = 1, rawCount do
-            points[#points + 1] = data[i]
-            if i < rawCount and upsample > 1 then
-                for j = 1, upsample - 1 do
-                    local t = j / upsample
-                    points[#points + 1] = data[i] + (data[i+1] - data[i]) * t
-                end
-            end
+        local width, height = graphFrame.AbsoluteSize.X, graphFrame.AbsoluteSize.Y
+        if width <= 0 or height <= 0 or rawCount < 2 then
+            linesHolder:ClearAllChildren()
+            return
         end
 
-        -- Determine Y range
         local minY, maxY
-        if yMin ~= nil and yMax ~= nil then
+        if yMin and yMax then
             minY, maxY = yMin, yMax
         else
-            minY = math.min(table.unpack(points))
-            maxY = math.max(table.unpack(points))
-            if minY == maxY then
-                maxY = minY + 1
-            end
+            minY = math.min(table.unpack(data))
+            maxY = math.max(table.unpack(data))
+            if minY == maxY then maxY = minY + 1 end
+        end
+        local range = maxY - minY
+
+        linesHolder:ClearAllChildren()
+
+        -- Convert data to pixel points
+        local pts = {}
+        for i = 1, rawCount do
+            local x = (i-1)/(rawCount-1) * width
+            local y = height - ((data[i] - minY)/range) * height
+            pts[i] = Vector2.new(x, y)
         end
 
-        local range = maxY - minY
-        local prevX, prevY = nil, nil
-        for i, val in ipairs(points) do
-            local x = (i - 1) / (#points - 1) * width
-            local y = height - ((val - minY) / range) * height
-            if prevX then
-                local dx = x - prevX
-                local dy = y - prevY
+        -- Draw spline segments
+        for i = 1, #pts - 1 do
+            local p0 = pts[math.max(1, i-1)]
+            local p1 = pts[i]
+            local p2 = pts[math.min(#pts, i+1)]
+            local p3 = pts[math.min(#pts, i+2)]
+            local last = p1
+            for step = 1, segmentSteps do
+                local t = step / segmentSteps
+                local x = catmullRom(p0.X, p1.X, p2.X, p3.X, t)
+                local y = catmullRom(p0.Y, p1.Y, p2.Y, p3.Y, t)
+                local dx = x - last.X
+                local dy = y - last.Y
                 local len = math.sqrt(dx*dx + dy*dy)
                 if len > 0 then
                     local line = Instance.new("Frame")
                     line.BackgroundColor3 = lineColor
                     line.BorderSizePixel = 0
-                    line.Size = UDim2.new(0, len, 0, 1)   -- 1px thin
-                    line.Position = UDim2.new(0, prevX, 0, prevY)
+                    line.Size = UDim2.new(0, len, 0, 1)
+                    line.Position = UDim2.new(0, last.X, 0, last.Y)
                     line.Rotation = math.deg(math.atan2(dy, dx))
                     line.Parent = linesHolder
                 end
+                last = Vector2.new(x, y)
             end
-            prevX, prevY = x, y
         end
     end
 
-    -- Public object
     local graphObj = {}
-
     function graphObj:Push(rawValue)
-        -- Exponential smoothing
         local value
         if smoothedValue == nil then
             smoothedValue = rawValue
@@ -1687,24 +1670,111 @@ function TabComponent:AddGraph(title, maxPoints, options)
             smoothedValue = smoothedValue + (rawValue - smoothedValue) * smoothAlpha
             value = smoothedValue
         end
-
-        -- Ring buffer
         if rawCount < maxPoints then
-            rawCount += 1
+            rawCount = rawCount + 1
             data[rawCount] = value
         else
             table.remove(data, 1)
             data[maxPoints] = value
         end
-
         redraw()
     end
 
-    -- Resize handler
     graphFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(redraw)
-
     return graphObj
 end
+
+-- ── Window:Notify(title, message, duration, options?) ───────────────────────
+function RGui:Notify(title, message, duration, options)
+    local theme = self._theme
+    duration = duration or 3
+    options = options or {}
+
+    if not self._notificationGui then
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "RGui_Notifications"
+        gui.ResetOnSpawn = false
+        gui.Parent = CoreGui
+        self._notificationGui = gui
+    end
+
+    local frame = Instance.new("Frame")
+    frame.BackgroundColor3 = options.BackgroundColor or theme.NotifyBg
+    frame.BorderSizePixel = 0
+    frame.Size = UDim2.new(0, 220, 0, 60)
+    frame.Position = UDim2.new(1, -230, 1, -70)
+    frame.Parent = self._notificationGui
+    applyCorner(frame, 2)
+    applyBorder(frame, theme.Border)
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Font = Enum.Font.RobotoMono
+    titleLabel.Text = title or ""
+    titleLabel.TextColor3 = options.TitleColor or theme.NotifyTitle
+    titleLabel.TextSize = 13
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Position = UDim2.new(0, 8, 0, 4)
+    titleLabel.Size = UDim2.new(1, -28, 0, 16)
+    titleLabel.Parent = frame
+
+    local msgLabel = Instance.new("TextLabel")
+    msgLabel.BackgroundTransparency = 1
+    msgLabel.Font = Enum.Font.RobotoMono
+    msgLabel.Text = message or ""
+    msgLabel.TextColor3 = options.MessageColor or theme.NotifyMsg
+    msgLabel.TextSize = 12
+    msgLabel.TextWrapped = true
+    msgLabel.TextXAlignment = Enum.TextXAlignment.Left
+    msgLabel.Position = UDim2.new(0, 8, 0, 22)
+    msgLabel.Size = UDim2.new(1, -28, 1, -26)
+    msgLabel.Parent = frame
+
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.BackgroundTransparency = 1
+    closeBtn.Position = UDim2.new(1, -20, 0, 4)
+    closeBtn.Size = UDim2.new(0, 16, 0, 16)
+    closeBtn.Font = Enum.Font.RobotoMono
+    closeBtn.Text = "×"
+    closeBtn.TextColor3 = theme.SubText
+    closeBtn.TextSize = 14
+    closeBtn.Parent = frame
+    closeBtn.MouseButton1Click:Connect(function()
+        frame:Destroy()
+    end)
+
+    task.delay(duration, function()
+        if frame and frame.Parent then
+            frame:Destroy()
+        end
+    end)
+
+    -- Stack existing notifications upwards
+    local existing = self._notificationGui:GetChildren()
+    local offset = 0
+    for _, child in ipairs(existing) do
+        if child:IsA("Frame") and child ~= frame then
+            local newPos = child.Position + UDim2.new(0, 0, 0, -64)
+            TweenService:Create(child, TWEEN_FAST, {Position = newPos}):Play()
+            offset += 64
+        end
+    end
+    frame.Position = UDim2.new(1, -230, 1, -70 - offset)
+
+    -- Optional accent line if a custom colour was given
+    if options.Color then
+        local line = Instance.new("Frame")
+        line.BackgroundColor3 = options.Color
+        line.Size = UDim2.new(0, 3, 1, 0)
+        line.BorderSizePixel = 0
+        line.Parent = frame
+        applyCorner(line, 2)
+    end
+
+    return frame
+end
+
+
                                          
 -- ── Window:Destroy() ──────────────────────────────────────────────────────────
 function RGui:Destroy()
