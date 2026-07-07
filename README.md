@@ -272,7 +272,7 @@ local Example = {
 ```lua
 local win = RGui.new("Rgui Demo", Example)--you need the comma, then you set the exact name of your theme.
 ```
-> Also, if you want to create your own themes easily, you can use this theme generator.
+> Also, if you want to create your own themes easily, you can use this theme generator. (ViveCoded)
 
 [ThemeGenerator.html](https://github.com/user-attachments/files/29726419/ThemeGenerator.html)
 
