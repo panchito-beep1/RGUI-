@@ -100,9 +100,10 @@ Group related controls under a labelled section.
 
 ```lua
 tab:AddSection("Aimbot")
+```
+
 Labels
 Display static text (supports rich text).
-```
 
 ```lua
 tab:AddLabel("Welcome to RGUI!", Color3.fromRGB(255, 200, 200))
@@ -118,15 +119,15 @@ end)
 ```
 
 -- With an icon
-```
+```lua
 tab:AddButton("Save", callback, "rbxassetid://222")
 ```
-```
+```lua
 -- Risky custom colour (triggers a warning notification)
 tab:AddButton("Danger", callback, { Color = Color3.fromRGB(255, 0, 0) })
+```
 Checkboxes
 Toggle settings on/off.
-```
 
 ```lua
 tab:AddCheckbox("Enable Aimbot", false, function(state)
@@ -135,7 +136,7 @@ end)
 ```
 
 -- Custom background colour
-```
+```lua
 tab:AddCheckbox("Risky", true, callback, { Color = Color3.fromRGB(0, 255, 0) })
 ```
 # Sliders
@@ -150,7 +151,7 @@ end)
 You can also pass a custom track colour via options:
 
 ```lua
-tab:AddSlider("Speed", 16, 250, 16, callback, { Color = Color3.fromRGB(255, 100, 100) })
+    tab:AddSlider("Speed", 16, 250, 16, callback, { Color = Color3.fromRGB(255, 100, 100) })
 ```
 
 # Dropdowns & Variants
@@ -210,11 +211,15 @@ Click the "Bind" button, then press the desired key/mouse button.
 tab:AddKeybindPicker("Fly Key", Enum.KeyCode.F, function(key)
     print("Key set to:", key)   -- e.g., "F", "Mouse1"
 end)
-lua
--- Start with a mouse button
-tab:AddKeybindPicker("Aim Key", "Mouse1", function(key) end)
-Returns an object with :GetKey() and :SetKey() for runtime updates.
 ```
+
+```lua
+-- Start with a mouse button
+
+tab:AddKeybindPicker("Aim Key", "Mouse1", function(key) end)
+```
+
+Returns an object with :GetKey() and :SetKey() for runtime updates.
 
 # Code Editor
 A multi‑line, scrollable text area with monospaced font – perfect for Lua code or large text blocks.
@@ -242,7 +247,9 @@ task.spawn(function()
     end
 end)
 ```
+
 Example: In‑Game Health Monitor
+
 ```lua
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -306,6 +313,7 @@ ThemeGenerator.html
 A draggable, title‑bar‑styled watermark that stays on screen.
 
 Static
+
 ```lua
 local wm = win:CreateWatermark("My Script", {
     TextColor = Color3.fromRGB(255, 255, 255),
@@ -340,7 +348,7 @@ Stacking toast notifications in the bottom‑right corner.
 win:Notify("Success", "Key verified!", 4)  -- duration in seconds
 ```
 -- Custom accent colour
-```
+```lua
 win:Notify("Warning", "Something went wrong!", 3, {
     Color = Color3.fromRGB(255, 255, 0)
 })
@@ -348,7 +356,8 @@ win:Notify("Warning", "Something went wrong!", 3, {
 # Configuration API
 Save and load settings easily with RGui.Config.
 
-```local config = RGui.Config.new("MyScriptConfig")
+```lua
+local config = RGui.Config.new("MyScriptConfig")
 config:Load()   -- load saved data from local storage
 
 local tab = win:AddTab("Settings")
