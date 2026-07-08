@@ -1,9 +1,8 @@
-RGUI — The ImGui for Roblox
-A clean, themeable, and feature‑packed UI library for your Roblox scripts.
+# RGUI — The ImGui for Roblox
 
-https://github.com/user-attachments/assets/59ded38d-19d9-4bed-b09f-45a1b47594b2
+<img width="359" height="222" alt="image" src="https://github.com/user-attachments/assets/b32e293c-13e1-4194-bce7-6e0aaf8e0bc5" />
 
-Demo Window
+# Demo Window
 ```lua
 local RGui = loadstring(game:HttpGet("YOUR_RAW_LINK_HERE"))()
 
@@ -52,7 +51,8 @@ Toggle the GUI:
 win._screen.Enabled = false  -- hide
 win._screen.Enabled = true   -- show
 ```
-#Key System
+# Key System
+
 A built‑in two‑column key verification window with service selection and copy buttons.
 
 ```lua
@@ -76,9 +76,9 @@ win:CreateKeySystem({
 })
 ```
 
-https://github.com/user-attachments/assets/08a0e539-41e9-495b-925f-1c4cae10a291
+<img width="427" height="197" alt="image" src="https://github.com/user-attachments/assets/f17943d2-8b38-43f0-a299-1df55fc55f6b" />
 
-#Tabs
+# Tabs
 Add tabs to organise your UI. Each tab can have an optional icon.
 
 ```lua
@@ -86,7 +86,7 @@ local combat = win:AddTab("Combat")
 local settings = win:AddTab("Settings", "rbxassetid://111")   -- icon
 ```
 
-#Sections
+# Sections
 Group related controls under a labelled section.
 
 ```lua
@@ -98,7 +98,7 @@ Display static text (supports rich text).
 ```lua
 tab:AddLabel("Welcome to RGUI!", Color3.fromRGB(255, 200, 200))
 ```
-Buttons
+# Buttons
 A clickable button. Can optionally include an icon and even a custom colour (but the library will warn you for breaking theme consistency).
 
 
@@ -129,7 +129,7 @@ end)
 ```
 tab:AddCheckbox("Risky", true, callback, { Color = Color3.fromRGB(0, 255, 0) })
 ```
-#Sliders
+# Sliders
 Numeric adjustment with a draggable handle.
 (No decimals allowed; value is always an integer.)
 
@@ -144,7 +144,7 @@ You can also pass a custom track colour via options:
 tab:AddSlider("Speed", 16, 250, 16, callback, { Color = Color3.fromRGB(255, 100, 100) })
 ```
 
-#Dropdowns & Variants
+# Dropdowns & Variants
 
 Standard Dropdown
 ```lua
@@ -152,7 +152,7 @@ tab:AddDropdown("Mode", {"Easy", "Hard", "Extreme"}, "Easy", function(selected)
     print(selected)
 end)
 ```
-Searchable Dropdown
+# Searchable Dropdown
 Type to filter through many options.
 
 ```lua
@@ -160,7 +160,7 @@ tab:AddSearchableDropdown("Fruit", {"Apple", "Banana", "Cherry", "Date"}, "Apple
     print(selected)
 end)
 ```
-Multi‑Select Dropdown
+# Multi‑Select Dropdown
 Select multiple items. Header shows selected count.
 
 ```lua
@@ -168,7 +168,7 @@ tab:AddMultiSelectDropdown("Toppings", {"Cheese", "Tomato", "Olives"}, {"Cheese"
     print(table.concat(selected, ", "))
 end)
 ```
-Multi‑Select + Searchable Dropdown
+# Multi‑Select + Searchable Dropdown
 Filter the list and pick many items.
 
 ```lua
@@ -176,7 +176,7 @@ tab:AddMultiSelectSearchableDropdown("Colors", {"Red", "Green", "Blue"}, {"Blue"
     print(table.concat(selected, ", "))
 end)
 ```
-#Color Picker
+# Color Picker
 Expandable colour picker with R/G/B sliders and a live preview.
 
 ```lua
@@ -184,7 +184,7 @@ tab:AddColorPicker("Accent", Color3.fromRGB(255, 255, 255), function(color)
     print(color)
 end)
 ```
-#Text Inputs
+# Text Inputs
 A single‑line text box with a label.
 
 ```lua
@@ -193,7 +193,7 @@ tab:AddTextBox("Username", "Enter name", "", function(text)
 end)
 ```
 
-#Keybind Picker
+# Keybind Picker
 Listen for keyboard keys or mouse buttons (Mouse1–Mouse2).
 Click the "Bind" button, then press the desired key/mouse button.
 
@@ -207,7 +207,7 @@ tab:AddKeybindPicker("Aim Key", "Mouse1", function(key) end)
 Returns an object with :GetKey() and :SetKey() for runtime updates.
 ```
 
-#Code Editor
+# Code Editor
 A multi‑line, scrollable text area with monospaced font – perfect for Lua code or large text blocks.
 
 ```lua
@@ -216,7 +216,7 @@ tab:AddCodeEditor("Script", "print('Hello')", "", function(code)
 end)
 ```
 
-#Graphs
+# Graphs
 Real‑time Catmull‑Rom spline graphs that are smooth and performant.
 
 ```lua
@@ -254,9 +254,9 @@ task.spawn(function()
     end
 end)
 ```
-https://github.com/user-attachments/assets/4ecb2494-49dc-4392-a4f9-cb1cd614a3c0
+<img width="400" height="237" alt="image" src="https://github.com/user-attachments/assets/31240b47-104a-41a2-bdf6-fd297d686881" />
 
-Custom Themes
+# Custom Themes
 You can completely restyle the UI with a theme table. Any missing keys will fall back to the default blue theme.
 
 ```lua
@@ -291,9 +291,9 @@ local win = RGui.new("Pink GUI", PinkTheme)
 Theme Generator: Use this handy tool to generate your own themes visually.
 ThemeGenerator.html
 
-https://github.com/user-attachments/assets/d1249da4-8462-48fb-a7b9-26ce6361e40e
+<img width="406" height="304" alt="image" src="https://github.com/user-attachments/assets/50056d69-c8e7-4a46-91d6-5f347a2853f1" />
 
-Watermarks
+# Watermarks
 A draggable, title‑bar‑styled watermark that stays on screen.
 
 Static
@@ -305,7 +305,7 @@ local wm = win:CreateWatermark("My Script", {
 })
 ```
 
-Dynamic (Update Method)
+# Dynamic (Update Method)
 The Update() method lets you change the text (or any option) on the fly. Perfect for FPS counters!
 
 ```lua
@@ -324,7 +324,7 @@ task.spawn(function()
 end)
 https://github.com/user-attachments/assets/c79fa482-4802-4900-aa73-d63d67f9d1f2
 ```
-Notifications
+# Notifications
 Stacking toast notifications in the bottom‑right corner.
 
 ```lua
@@ -336,7 +336,7 @@ win:Notify("Warning", "Something went wrong!", 3, {
     Color = Color3.fromRGB(255, 255, 0)
 })
 ```
-#Configuration API
+# Configuration API
 Save and load settings easily with RGui.Config.
 
 ```local config = RGui.Config.new("MyScriptConfig")
@@ -349,6 +349,5 @@ config:BindCheckbox(tab, "EnableESP", "ESP", false)
 -- Save on window close
 -- You can hook into the close button or use win:Destroy() to auto‑save
 ```
-Credits
-Developed by GoatedCitizen.
+# Find Me On Rscripts
 <a href="https://rscripts.net/user/GoatedCitizen" target="_blank"><img alt="GoatedCitizen on Rscripts" loading="lazy" width="360" height="132" src="https://rscripts.net/api/embed/user/GoatedCitizen?theme=dark" /></a>
