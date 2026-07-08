@@ -1,9 +1,11 @@
-# RGUI The Imgui For Roblox
-<img width="359" height="222" alt="image" src="https://github.com/user-attachments/assets/59ded38d-19d9-4bed-b09f-45a1b47594b2" />
-# Demo Window
+RGUI — The ImGui for Roblox
+A clean, themeable, and feature‑packed UI library for your Roblox scripts.
 
+https://github.com/user-attachments/assets/59ded38d-19d9-4bed-b09f-45a1b47594b2
+
+Demo Window
 ```lua
-local RGui = loadstring(game:HttpGet(""))()
+local RGui = loadstring(game:HttpGet("YOUR_RAW_LINK_HERE"))()
 
 local win = RGui.new("Demo")
 
@@ -22,193 +24,221 @@ end)
 Main:AddSlider("WalkSpeed", 16, 100, 16, function(value)
     print(value)
 end)
-```
+Installation
+lua
+local RGui = loadstring(game:HttpGet("YOUR_RAW_LINK_HERE"))()
+Creating a Window
+lua
+local win = RGui.new("Window Title", theme?, options?)
+Options (optional):
 
-# Installation
-```lua
-local RGui = loadstring(game:HttpGet(
-    "Link To Gui",
-    true
-))()
-```
-# How to create a window
+Position: UDim2 (e.g., UDim2.new(0.5, -200, 0.3, 0))
 
-```lua
-local win = RGui.new("Example Window")
-```
+Size: UDim2 (e.g., UDim2.new(0, 400, 0, 300))
 
-> You Can Toggle the GUI like this
-```lua
-win._screen.Enabled = false
+Icon: string – Roblox asset ID for a title bar icon.
 ```
 
 ```lua
-win._screen.Enabled = true
+local win = RGui.new("My Tool", nil, {
+    Position = UDim2.new(0, 100, 0, 50),
+    Size = UDim2.new(0, 500, 0, 400),
+    Icon = "rbxassetid://1234567890" -- Optional
+})
 ```
+Toggle the GUI:
 
-# How to create a KeySystem
+```lua
+win._screen.Enabled = false  -- hide
+win._screen.Enabled = true   -- show
+```
+#Key System
+A built‑in two‑column key verification window with service selection and copy buttons.
 
 ```lua
 win:CreateKeySystem({
-    ScriptTitle = "Example Key System",
+    ScriptTitle = "My Script",          -- optional
+    Icon = "rbxassetid://12345",        -- optional title bar icon
     Services = {
-        ["Directkey"] = {
-            CopyLink = "Secret Key",
-            Validate = function(k)
-                return k == "Secret Key"
-            end,
+        ["Linkvertise"] = {
+            CopyLink = "https://linkvertise.com/yourkey",
+            Validate = function(key) return key == "LV-ABC" end
         },
+        ["Direct Key"] = {
+            CopyKey = "SECRET123",
+            Validate = function(key) return key == "SECRET123" end
+        }
     },
-    Description = "Example Keysystem",
+    Description = "Enter your premium key to continue.",
     Callback = function(service, key)
-        win._screen.Enabled = true
-    end,
+        win._screen.Enabled = true   -- show main GUI after valid key
+    end
 })
 ```
-<img width="427" height="197" alt="image" src="https://github.com/user-attachments/assets/08a0e539-41e9-495b-925f-1c4cae10a291" />
 
-# How to create Tabs
+https://github.com/user-attachments/assets/08a0e539-41e9-495b-925f-1c4cae10a291
+
+#Tabs
+Add tabs to organise your UI. Each tab can have an optional icon.
 
 ```lua
-local Example    = win:AddTab("tab")
+local combat = win:AddTab("Combat")
+local settings = win:AddTab("Settings", "rbxassetid://111")   -- icon
 ```
 
-# How to create Sections
+#Sections
+Group related controls under a labelled section.
 
 ```lua
-tab:AddSection("Selection")
+tab:AddSection("Aimbot")
+Labels
+Display static text (supports rich text).
 ```
 
-# How to create Labels
-
 ```lua
-tab:AddLabel("Example Label")
+tab:AddLabel("Welcome to RGUI!", Color3.fromRGB(255, 200, 200))
 ```
+Buttons
+A clickable button. Can optionally include an icon and even a custom colour (but the library will warn you for breaking theme consistency).
 
-# How to create Buttons
 
 ```lua
-tab:AddButton("Example Button", function()
-    print("Button clicked")
-    --Your Function
+tab:AddButton("Click me", function()
+    print("Clicked!")
 end)
 ```
 
-# How to create Checkboxes
+-- With an icon
+```
+tab:AddButton("Save", callback, "rbxassetid://222")
+```
+```
+-- Risky custom colour (triggers a warning notification)
+tab:AddButton("Danger", callback, { Color = Color3.fromRGB(255, 0, 0) })
+Checkboxes
+Toggle settings on/off.
+```
 
 ```lua
-
-tab:AddCheckbox("Example Checkbox", false, function(state)
-    print(state)
-    --your function
+tab:AddCheckbox("Enable Aimbot", false, function(state)
+    print("Aimbot:", state)
 end)
 ```
 
-# How to create Sliders
+-- Custom background colour
+```
+tab:AddCheckbox("Risky", true, callback, { Color = Color3.fromRGB(0, 255, 0) })
+```
+#Sliders
+Numeric adjustment with a draggable handle.
+(No decimals allowed; value is always an integer.)
 
 ```lua
-
-tab:AddSlider("Example Slider", 0, 100, 50, function(value) -- 0 represents the minimum, 100 the maximum, and 50 the start position. Note, don't use decimals
+tab:AddSlider("Volume", 0, 100, 50, function(value)
     print(value)
 end)
 ```
-
-# How to create DropDowns and their variants
-
-> Normal Dropdown
+You can also pass a custom track colour via options:
 
 ```lua
-
-tab:AddDropdown(
-    "Example Dropdown",
-    {"Option 1", "Option 2", "Option 3"},
-    "Option 1",
-    function(selected)
-        print(selected)
-        --your Function
-    end
-)
-```
-> Searchable Dropdown
-```lua
-tab:AddSearchableDropdown(
-    "Searchable Dropdown",
-    {"Apple", "Banana", "Cherry"},
-    "Apple",
-    function(selected)
-        print(selected)
-    end
-)
+tab:AddSlider("Speed", 16, 250, 16, callback, { Color = Color3.fromRGB(255, 100, 100) })
 ```
 
-> Multiselect + Searchable Dropdown
+#Dropdowns & Variants
+
+Standard Dropdown
 ```lua
-tab:AddMultiSelectSearchableDropdown(
-    "Multi Select",
-    {"Red", "Green", "Blue"},
-    {"Blue"},
-    function(selected)
-        print(table.concat(selected, ", "))
-    end
-)
+tab:AddDropdown("Mode", {"Easy", "Hard", "Extreme"}, "Easy", function(selected)
+    print(selected)
+end)
 ```
-
-# Color Pickers
+Searchable Dropdown
+Type to filter through many options.
 
 ```lua
-tab:AddColorPicker(
-    "Example Color",
-    Color3.fromRGB(255, 255, 255),
-    function(color)
-        print(color)
-    end
-)
+tab:AddSearchableDropdown("Fruit", {"Apple", "Banana", "Cherry", "Date"}, "Apple", function(selected)
+    print(selected)
+end)
 ```
-
-# Text Inputs
+Multi‑Select Dropdown
+Select multiple items. Header shows selected count.
 
 ```lua
-tab:AddTextBox("Search", "Search items...", "", function(txt) print("Search:", txt) end)
+tab:AddMultiSelectDropdown("Toppings", {"Cheese", "Tomato", "Olives"}, {"Cheese"}, function(selected)
+    print(table.concat(selected, ", "))
+end)
 ```
-
-# Graphs
+Multi‑Select + Searchable Dropdown
+Filter the list and pick many items.
 
 ```lua
-local graph = tab:AddGraph("Example Graph", 60, {
-    YMin = 0,
-    YMax = 100,
-    LineColor = Color3.fromRGB(0, 170, 255) -Color Customization
-})
+tab:AddMultiSelectSearchableDropdown("Colors", {"Red", "Green", "Blue"}, {"Blue"}, function(selected)
+    print(table.concat(selected, ", "))
+end)
+```
+#Color Picker
+Expandable colour picker with R/G/B sliders and a live preview.
 
-local value = 50
-local direction = 1
+```lua
+tab:AddColorPicker("Accent", Color3.fromRGB(255, 255, 255), function(color)
+    print(color)
+end)
+```
+#Text Inputs
+A single‑line text box with a label.
 
-task.spawn(function()
-    while task.wait(0.15) do
-    --Value For the Graph
-        value += math.random(2, 8) * direction
-
-        -- Set Limits
-        if value >= 100 then
-            value = 100
-            direction = -1
-        elseif value <= 0 then
-            value = 0
-            direction = 1
-        end
-
-        graph:Push(value)
-    end
+```lua
+tab:AddTextBox("Username", "Enter name", "", function(text)
+    print("Input:", text)
 end)
 ```
 
-> Example Using an In-Game Value
+#Keybind Picker
+Listen for keyboard keys or mouse buttons (Mouse1–Mouse2).
+Click the "Bind" button, then press the desired key/mouse button.
 
+```lua
+tab:AddKeybindPicker("Fly Key", Enum.KeyCode.F, function(key)
+    print("Key set to:", key)   -- e.g., "F", "Mouse1"
+end)
+lua
+-- Start with a mouse button
+tab:AddKeybindPicker("Aim Key", "Mouse1", function(key) end)
+Returns an object with :GetKey() and :SetKey() for runtime updates.
+```
+
+#Code Editor
+A multi‑line, scrollable text area with monospaced font – perfect for Lua code or large text blocks.
+
+```lua
+tab:AddCodeEditor("Script", "print('Hello')", "", function(code)
+    print("Code changed:", code)
+end)
+```
+
+#Graphs
+Real‑time Catmull‑Rom spline graphs that are smooth and performant.
+
+```lua
+local graph = tab:AddGraph("FPS", 60, {
+    LineColor = Color3.fromRGB(0, 255, 0),
+    YMin = 0,
+    YMax = 200
+})
+
+-- Push new values regularly
+task.spawn(function()
+    while task.wait(0.2) do
+        graph:Push(fpsValue)
+    end
+end)
+```
+Example: In‑Game Health Monitor
 ```lua
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
-local graph = tab:AddGraph("Health", 60, {
+local healthGraph = tab:AddGraph("Health", 60, {
     YMin = 0,
     YMax = 100,
     LineColor = Color3.fromRGB(0, 255, 0)
@@ -218,109 +248,107 @@ task.spawn(function()
     while task.wait(0.2) do
         local character = player.Character
         local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-
         if humanoid then
-            graph:Push(humanoid.Health)
+            healthGraph:Push(humanoid.Health)
         end
     end
 end)
 ```
-<img width="400" height="237" alt="image" src="https://github.com/user-attachments/assets/4ecb2494-49dc-4392-a4f9-cb1cd614a3c0" />
+https://github.com/user-attachments/assets/4ecb2494-49dc-4392-a4f9-cb1cd614a3c0
 
-# Custom Themes
+Custom Themes
+You can completely restyle the UI with a theme table. Any missing keys will fall back to the default blue theme.
 
 ```lua
-local Example = {
-    -- Backgrounds
+local PinkTheme = {
     WindowBg      = Color3.fromRGB(17, 14, 20),
     TitleBg       = Color3.fromRGB(22, 18, 27),
     Border        = Color3.fromRGB(56, 42, 66),
-
-    -- Text
     Text          = Color3.fromRGB(245, 242, 248),
     SubText       = Color3.fromRGB(168, 160, 178),
-
-    -- Accent
     Accent        = Color3.fromRGB(255, 92, 176),
     AccentHover   = Color3.fromRGB(255, 122, 194),
-
-    -- Frames
     FrameBg       = Color3.fromRGB(24, 20, 30),
     FrameBgHover  = Color3.fromRGB(31, 26, 38),
-
-    -- Toggles
     CheckOff      = Color3.fromRGB(22, 18, 27),
     CheckOn       = Color3.fromRGB(255, 92, 176),
-
-    -- Sliders
     SliderTrack   = Color3.fromRGB(45, 38, 54),
     SliderFill    = Color3.fromRGB(255, 92, 176),
-
-    -- Tabs
     TabBarBg      = Color3.fromRGB(22, 18, 27),
     TabNormal     = Color3.fromRGB(22, 18, 27),
     TabNormalText = Color3.fromRGB(168, 160, 178),
-
     TabActive     = Color3.fromRGB(33, 27, 41),
     TabActiveText = Color3.fromRGB(255, 92, 176),
-
-    TabOff        = Color3.fromRGB(22, 18, 27),
-    TabOn         = Color3.fromRGB(33, 27, 41),
-
-    -- Graph
     GraphBg       = Color3.fromRGB(20, 17, 24),
     GraphLine     = Color3.fromRGB(255, 116, 189),
 }
 ```
-
-> To use this theme, you NEED to set it in the window just like this
+Then pass it to the window:
 
 ```lua
-local win = RGui.new("Rgui Demo", Example)--you need the comma, then you set the exact name of your theme.
+local win = RGui.new("Pink GUI", PinkTheme)
 ```
-> Also, if you want to create your own themes easily, you can use this theme generator. (ViveCoded)
+Theme Generator: Use this handy tool to generate your own themes visually.
+ThemeGenerator.html
 
-[ThemeGenerator.html](https://github.com/user-attachments/files/29726419/ThemeGenerator.html)
+https://github.com/user-attachments/assets/d1249da4-8462-48fb-a7b9-26ce6361e40e
 
-<img width="406" height="304" alt="image" src="https://github.com/user-attachments/assets/d1249da4-8462-48fb-a7b9-26ce6361e40e" />
+Watermarks
+A draggable, title‑bar‑styled watermark that stays on screen.
 
-# WaterMarks
-> Static Example
-
+Static
 ```lua
-local wm = win:CreateWatermark("Example Script", {
+local wm = win:CreateWatermark("My Script", {
     TextColor = Color3.fromRGB(255, 255, 255),
     TextSize = 14,
     Position = UDim2.new(0, 2, 0, 2)
 })
 ```
 
-> Dynamic Example
+Dynamic (Update Method)
+The Update() method lets you change the text (or any option) on the fly. Perfect for FPS counters!
 
 ```lua
-local wm = win:CreateWatermark("Example Script", {
+local wm = win:CreateWatermark("Loading...", {
+    Icon = "rbxassetid://111",
     TextColor = Color3.fromRGB(255, 255, 255),
     TextSize = 14,
-    Position = UDim2.new(0, 2, 0, 2)
+    Position = UDim2.new(0, 10, 0, 10)
 })
-
-local version = 1
 
 task.spawn(function()
-    while task.wait(2) do
-        version += 1
-
-        wm:Update(string.format(
-            "<font color='#FFFFFF'>Example Script <b>v1.%d</b></font>",
-            version
-        ))
+    while task.wait(0.5) do
+        local ping = game.Players.LocalPlayer:GetNetworkPing() * 1000
+        wm:Update(string.format("FPS: %d  Ping: %.0f ms", fps, ping))
     end
 end)
+https://github.com/user-attachments/assets/c79fa482-4802-4900-aa73-d63d67f9d1f2
 ```
+Notifications
+Stacking toast notifications in the bottom‑right corner.
 
-<img width="473" height="35" alt="image" src="https://github.com/user-attachments/assets/c79fa482-4802-4900-aa73-d63d67f9d1f2" />
+```lua
+win:Notify("Success", "Key verified!", 4)  -- duration in seconds
+```
+-- Custom accent colour
+```
+win:Notify("Warning", "Something went wrong!", 3, {
+    Color = Color3.fromRGB(255, 255, 0)
+})
+```
+#Configuration API
+Save and load settings easily with RGui.Config.
 
+```local config = RGui.Config.new("MyScriptConfig")
+config:Load()   -- load saved data from local storage
 
-# Me
+local tab = win:AddTab("Settings")
+config:BindCheckbox(tab, "EnableESP", "ESP", false)
+-- (more bindings can be added)
 
+-- Save on window close
+-- You can hook into the close button or use win:Destroy() to auto‑save
+```
+Credits
+Developed by GoatedCitizen.
 <a href="https://rscripts.net/user/GoatedCitizen" target="_blank"><img alt="GoatedCitizen on Rscripts" loading="lazy" width="360" height="132" src="https://rscripts.net/api/embed/user/GoatedCitizen?theme=dark" /></a>
