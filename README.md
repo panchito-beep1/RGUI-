@@ -29,11 +29,14 @@ end)
 
 ```lua
 local RGui = loadstring(game:HttpGet("YOUR_RAW_LINK_HERE"))()
-Creating a Window
 ```
+Creating a Window
+
 
 ```lua
-local win = RGui.new("Window Title", theme?, options?)
+local RGui = loadstring(game:HttpGet(
+    "rawlinkHere"
+))()
 ```
 Options (optional):
 
