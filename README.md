@@ -23,12 +23,18 @@ end)
 Main:AddSlider("WalkSpeed", 16, 100, 16, function(value)
     print(value)
 end)
-Installation
-lua
+```
+
+# Installation
+
+```lua
 local RGui = loadstring(game:HttpGet("YOUR_RAW_LINK_HERE"))()
 Creating a Window
-lua
+```
+
+```lua
 local win = RGui.new("Window Title", theme?, options?)
+```
 Options (optional):
 
 Position: UDim2 (e.g., UDim2.new(0.5, -200, 0.3, 0))
@@ -36,7 +42,6 @@ Position: UDim2 (e.g., UDim2.new(0.5, -200, 0.3, 0))
 Size: UDim2 (e.g., UDim2.new(0, 400, 0, 300))
 
 Icon: string – Roblox asset ID for a title bar icon.
-```
 
 ```lua
 local win = RGui.new("My Tool", nil, {
@@ -45,7 +50,8 @@ local win = RGui.new("My Tool", nil, {
     Icon = "rbxassetid://1234567890" -- Optional
 })
 ```
-Toggle the GUI:
+
+# Toggle the GUI:
 
 ```lua
 win._screen.Enabled = false  -- hide
