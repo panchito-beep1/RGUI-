@@ -52,12 +52,18 @@ win._screen.Enabled = true
 win:CreateKeySystem({
     ScriptTitle = "Example Key System",
     Services = {
-        ["Directkey"] = { CopyLink = "Secret Key", Validate = function(k) return k == "Secret Key" end },
+        ["Directkey"] = {
+            CopyLink = "Secret Key",
+            Validate = function(k)
+                return k == "Secret Key"
+            end,
+        },
     },
-    Description = "Example Key system The Key Is Secret Key",
+    Description = "Example Keysystem",
     Callback = function(service, key)
-        --Your Callback/Function
-    end
+        win._screen.Enabled = true
+    end,
+})
 ```
 <img width="427" height="197" alt="image" src="https://github.com/user-attachments/assets/08a0e539-41e9-495b-925f-1c4cae10a291" />
 
