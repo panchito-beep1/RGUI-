@@ -102,7 +102,7 @@ Group related controls under a labelled section.
 tab:AddSection("Aimbot")
 ```
 
-Labels
+# Labels
 Display static text (supports rich text).
 
 ```lua
@@ -126,7 +126,7 @@ tab:AddButton("Save", callback, "rbxassetid://222")
 -- Risky custom colour (triggers a warning notification)
 tab:AddButton("Danger", callback, { Color = Color3.fromRGB(255, 0, 0) })
 ```
-Checkboxes
+# Checkboxes
 Toggle settings on/off.
 
 ```lua
