@@ -30,21 +30,23 @@ end)
 ```lua
 local RGui = loadstring(game:HttpGet("YOUR_RAW_LINK_HERE"))()
 ```
-Creating a Window
-
 
 ```lua
 local RGui = loadstring(game:HttpGet(
     "rawlinkHere"
 ))()
 ```
-Options (optional):
+
+
+Options:
 
 Position: UDim2 (e.g., UDim2.new(0.5, -200, 0.3, 0))
 
 Size: UDim2 (e.g., UDim2.new(0, 400, 0, 300))
 
 Icon: string – Roblox asset ID for a title bar icon.
+
+# Creating a Window
 
 ```lua
 local win = RGui.new("My Tool", nil, {
