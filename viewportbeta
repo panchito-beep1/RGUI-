@@ -1,0 +1,180 @@
+-- ── Tab:AddViewport(title, options) ─────────────────────────────────────────
+function TabComponent:AddViewport(title, options)
+    local theme = getTheme(self)
+    options = options or {}
+
+    local container = Instance.new("Frame")
+    container.BackgroundTransparency = 1
+    container.Size = options.Size or UDim2.new(1, 0, 0, 200)
+    container.LayoutOrder = self:_nextOrder()
+    container.Parent = self._page
+
+    if title and title ~= "" then
+        local titleLabel = Instance.new("TextLabel")
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.Size = UDim2.new(1, 0, 0, 18)
+        titleLabel.Font = Enum.Font.RobotoMono
+        titleLabel.Text = title
+        titleLabel.TextColor3 = theme.Text
+        titleLabel.TextSize = 12
+        titleLabel.Parent = container
+    end
+
+    local viewportFrame = Instance.new("ViewportFrame")
+    viewportFrame.BackgroundColor3 = theme.WindowBg
+    viewportFrame.BorderSizePixel = 0
+    viewportFrame.Position = UDim2.new(0, 0, 0, title and 20 or 0)
+    viewportFrame.Size = UDim2.new(1, 0, 1, title and -20 or 0)
+    viewportFrame.ImageColor3 = Color3.new(1, 1, 1)
+    viewportFrame.Active = true
+    viewportFrame.Parent = container
+    applyCorner(viewportFrame, 2)
+    applyBorder(viewportFrame, theme.Border)
+
+    local camera = Instance.new("Camera")
+    camera.FieldOfView = options.FOV or 30
+    camera.Parent = viewportFrame
+    viewportFrame.CurrentCamera = camera
+
+    local modelClone = nil
+    local modelCenter = Vector3.zero
+    local modelRadius = 5
+
+    local rotationPresets = {
+        Front  = 0,
+        Back   = math.rad(180),
+        Left   = math.rad(90),
+        Right  = math.rad(-90),
+    }
+    local currentAngle = rotationPresets[options.StartingRotation or "Front"] or 0
+
+    -- Positions the camera to look at the model
+    local function focusCamera()
+        if not modelClone then return end
+        local maxExtent = modelRadius * 1.2
+        camera.CFrame = CFrame.new(
+            modelCenter + Vector3.new(0, maxExtent * 0.4, maxExtent * 2.5),
+            modelCenter
+        )
+    end
+
+    local function updateCamera()
+        if not modelClone then return end
+        local rotCF = CFrame.Angles(0, currentAngle, 0)
+        local offset = rotCF * Vector3.new(0, modelRadius * 0.4, modelRadius * 2.5)
+        camera.CFrame = CFrame.lookAt(modelCenter + offset, modelCenter)
+    end
+
+    local autoRotate = options.AutoRotate or false
+    local rotationSpeed = math.rad(options.RotationSpeed or 30)
+    local heartbeatConn
+
+    local function startAutoRotate()
+        if heartbeatConn then heartbeatConn:Disconnect() end
+        if autoRotate and modelClone then
+            heartbeatConn = game:GetService("RunService").Heartbeat:Connect(function(dt)
+                currentAngle = (currentAngle + rotationSpeed * dt) % (2 * math.pi)
+                updateCamera()
+            end)
+        end
+    end
+
+    local dragEnabled = options.DragEnabled or false
+    local dragging = false
+    local lastMousePos = Vector2.zero
+
+    local inputBeganConn, inputEndedConn, inputChangedConn
+
+    inputBeganConn = viewportFrame.InputBegan:Connect(function(input)
+        if dragEnabled and input.UserInputType == Enum.UserInputType.MouseButton2 then
+            dragging = true
+            lastMousePos = input.Position
+        end
+    end)
+
+    inputEndedConn = UserInputService.InputEnded:Connect(function(input)
+        if dragEnabled and input.UserInputType == Enum.UserInputType.MouseButton2 then
+            dragging = false
+        end
+    end)
+
+    inputChangedConn = UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - lastMousePos
+            lastMousePos = input.Position
+            currentAngle = currentAngle + math.rad(-delta.X * 0.5)
+            updateCamera()
+        end
+    end)
+
+    local function loadModel(originalModel)
+        if modelClone then
+            modelClone:Destroy()
+            modelClone = nil
+        end
+        if not originalModel then return end
+
+        local clone = originalModel:Clone()
+
+        -- Remove Humanoid and anchor parts
+        local hum = clone:FindFirstChildOfClass("Humanoid")
+        if hum then hum:Destroy() end
+        for _, part in ipairs(clone:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Anchored = true
+            end
+        end
+
+        -- Center at origin
+        clone:PivotTo(CFrame.new())
+
+        local bboxCenter, bboxSize = clone:GetBoundingBox()
+        if bboxSize then
+            modelRadius = math.max(bboxSize.X, bboxSize.Y, bboxSize.Z) * 1.5
+        else
+            modelRadius = 5
+        end
+        modelCenter = Vector3.zero
+
+        clone.Parent = viewportFrame
+        modelClone = clone
+
+        focusCamera()
+        startAutoRotate()
+    end
+
+    if options.Model then
+        loadModel(options.Model)
+    end
+
+    local obj = {}
+    function obj:SetModel(newModel)
+        loadModel(newModel)
+    end
+    function obj:SetRotation(rotationKey)
+        if rotationPresets[rotationKey] then
+            currentAngle = rotationPresets[rotationKey]
+            updateCamera()
+        end
+    end
+    function obj:SetAutoRotate(enabled)
+        autoRotate = enabled
+        startAutoRotate()
+    end
+    function obj:SetSpeed(speed)
+        rotationSpeed = math.rad(speed)
+        if autoRotate then startAutoRotate() end
+    end
+    function obj:GetModel()
+        return modelClone
+    end
+    function obj:Destroy()
+        if heartbeatConn then heartbeatConn:Disconnect() end
+        if inputBeganConn then inputBeganConn:Disconnect() end
+        if inputEndedConn then inputEndedConn:Disconnect() end
+        if inputChangedConn then inputChangedConn:Disconnect() end
+        if modelClone then modelClone:Destroy() end
+        container:Destroy()
+    end
+    return obj
+end
