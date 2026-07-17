@@ -2970,5 +2970,20 @@ function RGui:Destroy()
     if self._notificationGui then self._notificationGui:Destroy() end
     self._screen:Destroy()
 end
+-- ── icon support ────────────────────────────────────────────────────────────
+RGui.Lucide = nil
+function RGui:LoadLucide()
+    if not RGui.Lucide then
+        RGui.Lucide = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/xxpwnxxx420lord/Lucide.Lua/refs/heads/main/lucide.lua"
+        ))()
+    end
+    return RGui.Lucide
+end
+
+function RGui:GetLucideIcon(name, options)
+    local lucide = self:LoadLucide()
+    return lucide:geticon(name, options or {})
+end
 
 return RGui
