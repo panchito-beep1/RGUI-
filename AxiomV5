@@ -2865,6 +2865,8 @@ end
 
 -- ── Tab:AddCollapsible(title) ──────────────────────────────────────────────
 function TabComponent:AddCollapsible(title)
+    local TweenService = game:GetService("TweenService")
+    
     local theme = getTheme(self)
     local isOpen = true
 
@@ -2886,8 +2888,14 @@ function TabComponent:AddCollapsible(title)
     applyCorner(headerBtn, 2)
     applyBorder(headerBtn, theme.Border)
 
-    headerBtn.MouseEnter:Connect(function() headerBtn.BackgroundColor3 = theme.FrameBgHover end)
-    headerBtn.MouseLeave:Connect(function() headerBtn.BackgroundColor3 = theme.FrameBg end)
+    -- [NEW] Smooth Hover Colors
+    local hoverTweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    headerBtn.MouseEnter:Connect(function()
+        TweenService:Create(headerBtn, hoverTweenInfo, {BackgroundColor3 = theme.FrameBgHover}):Play()
+    end)
+    headerBtn.MouseLeave:Connect(function()
+        TweenService:Create(headerBtn, hoverTweenInfo, {BackgroundColor3 = theme.FrameBg}):Play()
+    end)
 
     local content = Instance.new("Frame")
     content.BackgroundTransparency = 1
@@ -2902,24 +2910,34 @@ function TabComponent:AddCollapsible(title)
     contentLayout.Padding = UDim.new(0, 4)
     contentLayout.Parent = content
 
-    local function updateSize()
+    -- [NEW] Setup tweening for resizing
+    local sizeTweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+    local function updateSize(instant)
         local contentHeight = contentLayout.AbsoluteContentSize.Y + 8
-        if isOpen then
-            container.Size = UDim2.new(1, 0, 0, 26 + contentHeight)
-            content.Size = UDim2.new(1, 0, 0, contentHeight) -- [FIX] Expand content frame to show items
+        
+        local targetContainerSize = isOpen and UDim2.new(1, 0, 0, 26 + contentHeight) or UDim2.new(1, 0, 0, 26)
+        local targetContentSize = isOpen and UDim2.new(1, 0, 0, contentHeight) or UDim2.new(1, 0, 0, 0)
+        
+        if instant then
+            container.Size = targetContainerSize
+            content.Size = targetContentSize
         else
-            container.Size = UDim2.new(1, 0, 0, 26)
-            content.Size = UDim2.new(1, 0, 0, 0) -- [FIX] Collapse content frame to hide items
+            TweenService:Create(container, sizeTweenInfo, {Size = targetContainerSize}):Play()
+            TweenService:Create(content, sizeTweenInfo, {Size = targetContentSize}):Play()
         end
     end
     
-    contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSize)
-    updateSize() -- [FIX] Call initially to ensure the sizes match the default `isOpen = true` state
+    contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        -- Animate when new elements are added dynamically
+        updateSize(false)
+    end)
+    updateSize(true) -- Initial snap to the correct sizes without animation
 
     headerBtn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
         headerBtn.Text = (isOpen and " ▼ " or " ▶ ") .. title
-        updateSize()
+        updateSize(false) -- Animate when clicked
     end)
 
     -- Create a dummy tab-like object that uses `content` as its page.
@@ -2941,7 +2959,7 @@ function TabComponent:AddCollapsible(title)
                     return method(dummyTab, ...)
                 end
             end
-            return method -- [FIX] Safely return the property if it is not a function
+            return method
         end
     }
     setmetatable(collapsible, proxyMetatable)
