@@ -2911,7 +2911,7 @@ function TabComponent:AddCollapsible(title)
     contentLayout.Parent = content
 
     -- [NEW] Setup tweening for resizing
-    local sizeTweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local sizeTweenInfo = TweenInfo.new(0.80, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
     local function updateSize(instant)
         local contentHeight = contentLayout.AbsoluteContentSize.Y + 8
