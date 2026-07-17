@@ -8,6 +8,7 @@ c$$$cc$$$c     Y$$$P    $$$$$$,     $$$$$$$$$$$"$$$
 ]]
 
 print([[
+
     :::.      .,::      .::::    ...     .        :
     ;;`;;     `;;;,  .,;; ;;; .;;;;;;;.  ;;,.    ;;;
    ,[[ '[[,     '[[,,[['  [[[,[[     \[[,[[[[, ,[[[[,
@@ -2773,6 +2774,175 @@ function RGui:ShowLoadingScreen(title)
     end
 
     return controller
+end
+
+-- ── Tab:AddTable(headers, rows, options?) ──────────────────────────────────
+function TabComponent:AddTable(headers, rows, options)
+    local theme = getTheme(self)
+    options = options or {}
+    local headerHeight = options.HeaderHeight or 24
+    local rowHeight = options.RowHeight or 22
+    local maxHeight = options.MaxHeight or 200   -- scroll if taller
+
+    -- Container for the whole table
+    local container = Instance.new("Frame")
+    container.BackgroundTransparency = 1
+    container.Size = UDim2.new(1, 0, 0, math.min(#rows * rowHeight + headerHeight, maxHeight))
+    container.LayoutOrder = self:_nextOrder()
+    container.Parent = self._page
+
+    -- Scrolling frame
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.BackgroundTransparency = 1
+    scroll.Size = UDim2.new(1, 0, 1, 0)
+    scroll.CanvasSize = UDim2.new(0, 0, 0, #rows * rowHeight + headerHeight)
+    scroll.ScrollBarThickness = 4
+    scroll.ScrollBarImageColor3 = theme.Accent
+    scroll.Parent = container
+
+    -- Header row
+    local headerFrame = Instance.new("Frame")
+    headerFrame.BackgroundColor3 = theme.TitleBg   -- bluer dark
+    headerFrame.Size = UDim2.new(1, 0, 0, headerHeight)
+    headerFrame.Parent = scroll
+    applyBorder(headerFrame, theme.Border)
+
+    local headerLayout = Instance.new("UIListLayout")
+    headerLayout.FillDirection = Enum.FillDirection.Horizontal
+    headerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    headerLayout.Padding = UDim.new(0, 0)   -- no gaps
+    headerLayout.Parent = headerFrame
+
+    for i, header in ipairs(headers) do
+        local lbl = Instance.new("TextLabel")
+        lbl.BackgroundTransparency = 1
+        lbl.Size = UDim2.new(1 / #headers, 0, 1, 0)
+        lbl.Font = Enum.Font.RobotoMono
+        lbl.Text = header
+        lbl.TextColor3 = theme.Text
+        lbl.TextSize = 13
+        lbl.TextXAlignment = Enum.TextXAlignment.Center
+        lbl.Parent = headerFrame
+        lbl.LayoutOrder = i
+    end
+
+    -- Data rows
+    for r, rowData in ipairs(rows) do
+        local rowFrame = Instance.new("Frame")
+        -- alternating color: slightly lighter for even rows
+        if r % 2 == 0 then
+            rowFrame.BackgroundColor3 = theme.FrameBg
+        else
+            rowFrame.BackgroundColor3 = theme.WindowBg
+        end
+        rowFrame.Size = UDim2.new(1, 0, 0, rowHeight)
+        rowFrame.Position = UDim2.new(0, 0, 0, headerHeight + (r-1) * rowHeight)
+        rowFrame.Parent = scroll
+        applyBorder(rowFrame, theme.Border)
+
+        local rowLayout = Instance.new("UIListLayout")
+        rowLayout.FillDirection = Enum.FillDirection.Horizontal
+        rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        rowLayout.Padding = UDim.new(0, 0)
+        rowLayout.Parent = rowFrame
+
+        for c, cell in ipairs(rowData) do
+            local cellLabel = Instance.new("TextLabel")
+            cellLabel.BackgroundTransparency = 1
+            cellLabel.Size = UDim2.new(1 / #headers, 0, 1, 0)
+            cellLabel.Font = Enum.Font.RobotoMono
+            cellLabel.Text = tostring(cell)
+            cellLabel.TextColor3 = theme.SubText
+            cellLabel.TextSize = 12
+            cellLabel.TextXAlignment = Enum.TextXAlignment.Center
+            cellLabel.Parent = rowFrame
+            cellLabel.LayoutOrder = c
+        end
+    end
+
+    return container
+end
+
+-- ── Tab:AddCollapsible(title) ──────────────────────────────────────────────
+function TabComponent:AddCollapsible(title)
+    local theme = getTheme(self)
+    local isOpen = true
+
+    local container = Instance.new("Frame")
+    container.BackgroundTransparency = 1
+    container.Size = UDim2.new(1, 0, 0, 26)
+    container.LayoutOrder = self:_nextOrder()
+    container.Parent = self._page
+
+    local headerBtn = Instance.new("TextButton")
+    headerBtn.BackgroundColor3 = theme.FrameBg
+    headerBtn.Size = UDim2.new(1, 0, 0, 24)
+    headerBtn.Font = Enum.Font.RobotoMono
+    headerBtn.Text = "▼ " .. title
+    headerBtn.TextColor3 = theme.Text
+    headerBtn.TextSize = 13
+    headerBtn.TextXAlignment = Enum.TextXAlignment.Left
+    headerBtn.Parent = container
+    applyCorner(headerBtn, 2)
+    applyBorder(headerBtn, theme.Border)
+
+    headerBtn.MouseEnter:Connect(function() headerBtn.BackgroundColor3 = theme.FrameBgHover end)
+    headerBtn.MouseLeave:Connect(function() headerBtn.BackgroundColor3 = theme.FrameBg end)
+
+    local content = Instance.new("Frame")
+    content.BackgroundTransparency = 1
+    content.Position = UDim2.new(0, 0, 0, 26)
+    content.Size = UDim2.new(1, 0, 0, 0)
+    content.ClipsDescendants = true
+    content.Parent = container
+    applyPadding(content, 4)
+
+    local contentLayout = Instance.new("UIListLayout")
+    contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    contentLayout.Padding = UDim.new(0, 4)
+    contentLayout.Parent = content
+
+    local function updateSize()
+        if isOpen then
+            local contentHeight = contentLayout.AbsoluteContentSize.Y + 8
+            container.Size = UDim2.new(1, 0, 0, 26 + contentHeight)
+        else
+            container.Size = UDim2.new(1, 0, 0, 26)
+        end
+    end
+    contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSize)
+
+    headerBtn.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
+        headerBtn.Text = (isOpen and "▼ " or "▶ ") .. title
+        updateSize()
+    end)
+
+    -- Create a dummy tab-like object that uses `content` as its page.
+    local dummyTab = {
+        _page = content,
+        _window = self._window,
+        _layoutOrder = 0,   -- will be incremented as components are added
+    }
+    setmetatable(dummyTab, TabComponent)   -- inherit all Add* methods
+
+    -- Wrap dummyTab so that all calls go through it, but we return a simpler object.
+    local collapsible = {}
+    local proxyMetatable = {
+        __index = function(_, methodName)
+            -- forward to dummyTab
+            local method = dummyTab[methodName]
+            if type(method) == "function" then
+                return function(_, ...)
+                    return method(dummyTab, ...)
+                end
+            end
+            return nil
+        end
+    }
+    setmetatable(collapsible, proxyMetatable)
+
+    return collapsible
 end
 
 -- ── Window:Destroy() ────────────────────────────────────────────────────────
