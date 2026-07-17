@@ -2880,7 +2880,7 @@ function TabComponent:AddCollapsible(title)
     headerBtn.BackgroundColor3 = theme.FrameBg
     headerBtn.Size = UDim2.new(1, 0, 0, 24)
     headerBtn.Font = Enum.Font.RobotoMono
-    headerBtn.Text = "▼ " .. title
+    headerBtn.Text = " ▼ " .. title
     headerBtn.TextColor3 = theme.Text
     headerBtn.TextSize = 13
     headerBtn.TextXAlignment = Enum.TextXAlignment.Left
@@ -2936,7 +2936,7 @@ function TabComponent:AddCollapsible(title)
 
     headerBtn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
-        headerBtn.Text = (isOpen and "▼ " or "▶ ") .. title
+        headerBtn.Text = (isOpen and " ▼ " or "▶ ") .. title
         updateSize(false)
     end)
 
