@@ -2936,7 +2936,7 @@ function TabComponent:AddCollapsible(title)
 
     headerBtn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
-        headerBtn.Text = (isOpen and " ▼ " or "▶ ") .. title
+        headerBtn.Text = (isOpen and " ▼ " or " ▶ ") .. title
         updateSize(false)
     end)
 
