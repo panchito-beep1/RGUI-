@@ -22,13 +22,16 @@ local TabComponent = {}
 TabComponent.__index = TabComponent
 
 -- ── Services ──────────────────────────────────────────────────────────────────
-local Players           = game:GetService("Players")
-local UserInputService  = game:GetService("UserInputService")
-local TweenService      = game:GetService("TweenService")
-local TextService       = game:GetService("TextService")
-local CoreGui           = game:GetService("CoreGui")
+local cloneref = cloneref or clonereference or function(instance)
+    return instance
+end
 
-local LocalPlayer = Players.LocalPlayer
+local Players          = cloneref(game:GetService("Players"))
+local UserInputService = cloneref(game:GetService("UserInputService"))
+local TweenService     = cloneref(game:GetService("TweenService"))
+local TextService      = cloneref(game:GetService("TextService"))
+local CoreGui          = cloneref(game:GetService("CoreGui"))
+local LocalPlayer      = Players.LocalPlayer
 
 -- ── Default Theme ─────────────────────────────────────────────────────────────
 RGui.DefaultTheme = {
