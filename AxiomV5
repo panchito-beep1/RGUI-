@@ -2903,14 +2903,18 @@ function TabComponent:AddCollapsible(title)
     contentLayout.Parent = content
 
     local function updateSize()
+        local contentHeight = contentLayout.AbsoluteContentSize.Y + 8
         if isOpen then
-            local contentHeight = contentLayout.AbsoluteContentSize.Y + 8
             container.Size = UDim2.new(1, 0, 0, 26 + contentHeight)
+            content.Size = UDim2.new(1, 0, 0, contentHeight) -- [FIX] Expand content frame to show items
         else
             container.Size = UDim2.new(1, 0, 0, 26)
+            content.Size = UDim2.new(1, 0, 0, 0) -- [FIX] Collapse content frame to hide items
         end
     end
+    
     contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSize)
+    updateSize() -- [FIX] Call initially to ensure the sizes match the default `isOpen = true` state
 
     headerBtn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
@@ -2937,7 +2941,7 @@ function TabComponent:AddCollapsible(title)
                     return method(dummyTab, ...)
                 end
             end
-            return nil
+            return method -- [FIX] Safely return the property if it is not a function
         end
     }
     setmetatable(collapsible, proxyMetatable)
