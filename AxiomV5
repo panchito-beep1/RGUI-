@@ -1,32 +1,19 @@
 --[[
-  ▄▄▄▄▄▄▄    ▄▄▄▄▄▄▄  ▄▄▄  ▄▄▄ ▄▄▄▄▄ 
-  ███▀▀███▄ ███▀▀▀▀▀  ███  ███  ███  
-  ███▄▄███▀ ███       ███  ███  ███  
-  ███▀▀██▄  ███  ███▀ ███▄▄███  ███  
-  ███  ▀███ ▀██████▀  ▀██████▀ ▄███▄  
+  :::.      .,::      .::::    ...     .        :   
+  ;;`;;     `;;;,  .,;; ;;; .;;;;;;;.  ;;,.    ;;;  
+ ,[[ '[[,     '[[,,[['  [[[,[[     \[[,[[[[, ,[[[[, 
+c$$$cc$$$c     Y$$$P    $$$$$$,     $$$$$$$$$$$"$$$ 
+ 888   888,  oP"``"Yo,  888"888,_ _,88P888 Y88" 888o
+ YMM   ""`,m"       "Mm,MMM  "YMMMMMP" MMM  M'  "MMM
 ]]
-print("▄▄▄▄▄▄▄    ▄▄▄▄▄▄▄  ▄▄▄  ▄▄▄ ▄▄▄▄▄ ")
-print("███▀▀███▄ ███▀▀▀▀▀  ███  ███  ███  ")
-print("███▄▄███▀ ███       ███  ███  ███  ")
-print("███▀▀██▄  ███  ███▀ ███▄▄███  ███  ")
-print("███  ▀███ ▀██████▀  ▀██████▀ ▄███▄  ")
+print("  :::.      .,::      .::::    ...     .        :   ")
+print("  ;;`;;     `;;;,  .,;; ;;; .;;;;;;;.  ;;,.    ;;;  ")
+print(" ,[[ '[[,     '[[,,[['  [[[,[[     \[[,[[[[, ,[[[[, ")
+print("c$$$cc$$$c     Y$$$P    $$$$$$,     $$$$$$$$$$$"$$$ ")
+print(" 888   888,  oP"``"Yo,  888"888,_ _,88P888 Y88" 888o")
+print(" YMM   ""`,m"       "Mm,MMM  "YMMMMMP" MMM  M'  "MMM")
 
---[[
-    R-GUI Library vWho ever Knuws – Complete Polished Edition
-    Features:
-    - Windows: collapsible, draggable, resizable, optional icon
-    - Tabs with optional icons
-    - Components: Button, Checkbox, Slider, Dropdown, SearchableDropdown,
-      MultiSelectDropdown, MultiSelectSearchableDropdown, ColorPicker,
-      Label, Section, Separator, TextBox
-    - Smooth Catmull‑Rom graph (spline)
-    - Watermark (draggable, matches titlebar style, Update() method)
-    - Key System (two‑column, service dropdown, copy button, icon)
-    - Notification system (stacking toasts)
-    - Risky custom colour warning (notifies when a component uses a custom colour)
-    - All GUIs parented to CoreGui
-    - Fully themeable
-]]
+--Axiom V5 Code.mD179ljoufdvglj]12=0
 
 local RGui = {}
 RGui.__index = RGui
