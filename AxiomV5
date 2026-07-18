@@ -17,7 +17,7 @@ print([[
    YMM   ""`,m"       "Mm,MMM  "YMMMMMP" MMM  M'  "MMM
 ]])
 
--- Axiom V5 Code.mD179ljoufdvglj]12=1266
+-- Axiom V5 Code.mD179ljoufdvglj]12=1266.2
 
 local RGui = {}
 RGui.__index = RGui
@@ -2717,6 +2717,7 @@ function RGui:ShowLoadingScreen(title)
     statusLabel.TextSize = 13
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = loadFrame
+    statusLabel.RichText = true
 
     -- Progress bar background
     local progressBg = Instance.new("Frame")
