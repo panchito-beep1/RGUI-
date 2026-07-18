@@ -17,7 +17,7 @@ print([[
    YMM   ""`,m"       "Mm,MMM  "YMMMMMP" MMM  M'  "MMM
 ]])
 
--- Axiom V5 Code.mD179ljoufdvglj]12=0
+-- Axiom V5 Code.mD179ljoufdvglj]12=1266
 
 local RGui = {}
 RGui.__index = RGui
@@ -117,15 +117,6 @@ local function makeDraggable(frame, handle)
             )
         end
     end)
-end
-
--- ── Risky colour warning helper ──────────────────────────────────────────────
-local function warnCustomColor(tab, componentName)
-    if tab._window then
-        tab._window:Notify("Theme Warning",
-            "Custom colour used on " .. componentName .. " – this may break theme consistency!",
-            4, { Color = Color3.fromRGB(255, 100, 100) })
-    end
 end
 
 -- ── RGui.new(title, customTheme, options) ────────────────────────────────────
@@ -2684,7 +2675,6 @@ end
 function RGui:ShowLoadingScreen(title)
     local theme = self._theme or RGui.DefaultTheme
 
-    -- Hide the main frame, but keep the ScreenGui alive
     if self._mainFrame then
         self._mainFrame.Visible = false
     end
@@ -2714,6 +2704,7 @@ function RGui:ShowLoadingScreen(title)
     titleLabel.TextSize = 13
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = titleBar
+    titleLabel.RichText = true
 
     -- Status text
     local statusLabel = Instance.new("TextLabel")
@@ -2761,7 +2752,7 @@ function RGui:ShowLoadingScreen(title)
 
         -- Auto‑finish when 100% is reached
         if percent >= 100 then
-            task.wait(0.5)                     -- brief pause so the user sees the full bar
+            task.wait(0.5)                     
             loadFrame:Destroy()
 
             if self._screen then
@@ -2888,7 +2879,6 @@ function TabComponent:AddCollapsible(title)
     applyCorner(headerBtn, 2)
     applyBorder(headerBtn, theme.Border)
 
-    -- [UPDATED] Snappier 0.1s hover response
     local hoverTweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     headerBtn.MouseEnter:Connect(function()
         TweenService:Create(headerBtn, hoverTweenInfo, {BackgroundColor3 = theme.FrameBgHover}):Play()
@@ -2910,8 +2900,6 @@ function TabComponent:AddCollapsible(title)
     contentLayout.Padding = UDim.new(0, 4)
     contentLayout.Parent = content
 
-    -- [UPDATED] 0.25s duration with Quint easing. 
-    -- Quint snaps incredibly fast initially, but eases into the final position very smoothly.
     local sizeTweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
     local function updateSize(instant)
@@ -2970,6 +2958,7 @@ function RGui:Destroy()
     if self._notificationGui then self._notificationGui:Destroy() end
     self._screen:Destroy()
 end
+
 -- ── icon support ────────────────────────────────────────────────────────────
 RGui.Lucide = nil
 function RGui:LoadLucide()
@@ -2984,6 +2973,15 @@ end
 function RGui:GetLucideIcon(name, options)
     local lucide = self:LoadLucide()
     return lucide:geticon(name, options or {})
+end
+
+-- ── colour warning helper ──────────────────────────────────────────────
+local function warnCustomColor(tab, componentName)
+    if tab._window then
+        tab._window:Notify("Theme Warning",
+            "Custom colour used on " .. componentName .. " – this may break theme consistency!",
+            4, { Color = Color3.fromRGB(255, 100, 100) })
+    end
 end
 
 return RGui
