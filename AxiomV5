@@ -17,7 +17,7 @@ print([[
    YMM   ""`,m"       "Mm,MMM  "YMMMMMP" MMM  M'  "MMM
 ]])
 
--- Axiom V5 Code.mD179ljoufdvglj]12=1266.2rel121
+-- Axiom V5 Israeli.V1
 
 local RGui = {}
 RGui.__index = RGui
@@ -2608,6 +2608,7 @@ function RGui:ShowDialog(options)
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.ZIndex = 102
     titleLabel.Parent = titleBar
+    titleLabel.TextWrapped = true
 
     -- Message
     local msgLabel = Instance.new("TextLabel")
@@ -2623,6 +2624,7 @@ function RGui:ShowDialog(options)
     msgLabel.TextYAlignment = Enum.TextYAlignment.Top
     msgLabel.ZIndex = 102
     msgLabel.Parent = dialogFrame
+    msgLabel.TextWrapped = true
 
     -- Button row
     local buttonContainer = Instance.new("Frame")
@@ -2706,6 +2708,7 @@ function RGui:ShowLoadingScreen(title)
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = titleBar
     titleLabel.RichText = true
+    statusLabel.TextWrapped = true
 
     -- Status text
     local statusLabel = Instance.new("TextLabel")
@@ -2719,6 +2722,7 @@ function RGui:ShowLoadingScreen(title)
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = loadFrame
     statusLabel.RichText = true
+    statusLabel.TextWrapped = true
 
     -- Progress bar background
     local progressBg = Instance.new("Frame")
@@ -2817,6 +2821,7 @@ function TabComponent:AddTable(headers, rows, options)
         lbl.TextXAlignment = Enum.TextXAlignment.Center
         lbl.Parent = headerFrame
         lbl.LayoutOrder = i
+        lbl.TextWrapped = true
     end
 
     -- Data rows
@@ -2850,6 +2855,8 @@ function TabComponent:AddTable(headers, rows, options)
             cellLabel.TextXAlignment = Enum.TextXAlignment.Center
             cellLabel.Parent = rowFrame
             cellLabel.LayoutOrder = c
+            cellLabel.TextWrapped = true
+            cellLabel.RichText = true
         end
     end
 
