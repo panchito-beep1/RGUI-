@@ -2708,7 +2708,7 @@ function RGui:ShowLoadingScreen(title)
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = titleBar
     titleLabel.RichText = true
-    statusLabel.TextWrapped = true
+    titleLabel.TextWrapped = true
 
     -- Status text
     local statusLabel = Instance.new("TextLabel")
