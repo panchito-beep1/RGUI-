@@ -17,7 +17,7 @@ print([[
    YMM   ""`,m"       "Mm,MMM  "YMMMMMP" MMM  M'  "MMM
 ]])
 
--- Axiom V5 Code.mD179ljoufdvglj]12=1266.2
+-- Axiom V5 Code.mD179ljoufdvglj]12=1266.2rel121
 
 local RGui = {}
 RGui.__index = RGui
@@ -163,6 +163,7 @@ function RGui.new(title, customTheme, options)
     titleLbl.TextSize = 13
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
     titleLbl.Parent = titleBar
+    titleLbl.RichText = true
 
     -- Icon support for window
     if options.Icon then
