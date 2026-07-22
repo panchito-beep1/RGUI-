@@ -1727,12 +1727,18 @@ function RGui:CreateKeySystem(config)
         local serviceData = services[selectedService]
         local toCopy = serviceData.CopyLink or serviceData.CopyKey
         if toCopy then
-            -- Use ClipboardService for reliability
-            game:GetService("ClipboardService"):SetClipboard(toCopy)
+            -- Executor-native clipboard fallback chain
+            if setclipboard then
+                setclipboard(toCopy)
+            elseif toclipboard then
+                toclipboard(toCopy)
+            else
+                warn("Clipboard function not available.")
+            end
+
             -- Visual feedback
             copyBtn.BackgroundColor3 = theme.Accent
             task.delay(0.2, function() copyBtn.BackgroundColor3 = theme.FrameBg end)
-            -- Show a quick “Copied!” notification
             self:Notify("Copied!", "The key/link has been copied.", 2, {
                 Color = theme.Accent
             })
